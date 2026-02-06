@@ -13,15 +13,22 @@
       text-align: center;
       padding-top: 30vh;
     }
+
     a {
       display: inline-block;
-      margin-top: 20px;
-      padding: 14px 24px;
+      margin-top: 24px;
+      padding: 14px 28px;
       background: #fff;
       color: #000;
       text-decoration: none;
       font-weight: bold;
       border-radius: 8px;
+      transition: 0.2s ease;
+    }
+
+    a.disabled {
+      opacity: 0.5;
+      pointer-events: none;
     }
   </style>
 </head>
@@ -31,12 +38,33 @@
   <h1>🔓 Hoodie Unlocked</h1>
   <p>This hoodie is authentic.</p>
 
-  <p><strong>Hoodie ID:</strong> <span id="hoodieId"></span></p>
+  <p><strong>Hoodie ID:</strong> <span id="hoodieId">Loading...</span></p>
+
+  <a id="lensLink" href="#" target="_blank">Open AR Lens</a>
 
   <script>
+    // Read hoodie ID from URL
     const params = new URLSearchParams(window.location.search);
-    const hoodie = params.get("hoodie") || "Not Assigned";
-    document.getElementById("hoodieId").innerText = hoodie;
+    const hoodie = params.get("hoodie");
+
+    const hoodieIdEl = document.getElementById("hoodieId");
+    const lensLink = document.getElementById("lensLink");
+
+    // Display hoodie ID
+    hoodieIdEl.innerText = hoodie || "Not Assigned";
+
+    // Hoodie → Lens mapping
+    const hoodieLensMap = {
+      "HD-157": "PASTE_SNAP_LENS_URL_HERE"
+    };
+
+    // Check if hoodie has a lens
+    if (hoodie && hoodieLensMap[hoodie]) {
+      lensLink.href = hoodieLensMap[hoodie];
+    } else {
+      lensLink.innerText = "Lens not available";
+      lensLink.classList.add("disabled");
+    }
   </script>
 
 </body>
