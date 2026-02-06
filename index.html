@@ -11,9 +11,8 @@
       color: #fff;
       font-family: Arial, sans-serif;
       text-align: center;
-      padding-top: 30vh;
+      padding-top: 25vh;
     }
-
     a {
       display: inline-block;
       margin-top: 24px;
@@ -23,10 +22,8 @@
       text-decoration: none;
       font-weight: bold;
       border-radius: 8px;
-      transition: 0.2s ease;
     }
-
-    a.disabled {
+    .disabled {
       opacity: 0.5;
       pointer-events: none;
     }
@@ -36,36 +33,60 @@
 <body>
 
   <h1>🔓 Hoodie Unlocked</h1>
-  <p>This hoodie is authentic.</p>
+  <p>Exclusive AR experience activated</p>
 
-  <p><strong>Hoodie ID:</strong> <span id="hoodieId">Loading...</span></p>
+  <p><strong>Hoodie ID:</strong> <span id="hoodieId">Checking...</span></p>
+  <p id="status">Verifying conditions…</p>
 
-  <a id="lensLink" href="#" target="_blank">Open AR Lens</a>
+  <a id="lensLink" class="disabled">Loading Lens…</a>
 
-  <script>
-    // Read hoodie ID from URL
-    const params = new URLSearchParams(window.location.search);
-    const hoodie = params.get("hoodie");
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const hoodie = params.get("hoodie");
 
-    const hoodieIdEl = document.getElementById("hoodieId");
-    const lensLink = document.getElementById("lensLink");
+  const hoodieIdEl = document.getElementById("hoodieId");
+  const statusEl = document.getElementById("status");
+  const lensLink = document.getElementById("lensLink");
 
-    // Display hoodie ID
-    hoodieIdEl.innerText = hoodie || "Not Assigned";
+  hoodieIdEl.innerText = hoodie || "Not Assigned";
 
-    // Hoodie → Lens mapping
-    const hoodieLensMap = {
-      "HD-157": "https://www.snapchat.com/unlock/?type=SNAPCODE&uuid=b690eca2f8e34ca9a5fd8cb3a15db720&metadata=01"
-    };
+  // ⏰ TIME CHECK
+  const hour = new Date().getHours();
+  const isNight = hour >= 18 || hour < 6;
 
-    // Check if hoodie has a lens
-    if (hoodie && hoodieLensMap[hoodie]) {
-      lensLink.href = hoodieLensMap[hoodie];
-    } else {
-      lensLink.innerText = "Lens not available";
-      lensLink.classList.add("disabled");
+  // 📍 LOCATION CHECK
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+
+      const isBangalore = lat > 12 && lat < 14 && lon > 77 && lon < 78;
+
+      let lensURL = "";
+
+      if (hoodie === "HD-157" && isBangalore && isNight) {
+        lensURL = "https://www.snapchat.com/unlock/?uuid=NIGHT_BLR_LENS";
+        statusEl.innerText = "Night drop unlocked 🌙 (Bangalore)";
+      }
+      else if (hoodie === "HD-157" && isBangalore) {
+        lensURL = "https://www.snapchat.com/unlock/?uuid=DAY_BLR_LENS";
+        statusEl.innerText = "Day experience unlocked ☀️ (Bangalore)";
+      }
+      else {
+        lensURL = "https://www.snapchat.com/unlock/?uuid=GLOBAL_LENS";
+        statusEl.innerText = "Global experience unlocked 🌍";
+      }
+
+      lensLink.href = lensURL;
+      lensLink.classList.remove("disabled");
+      lensLink.innerText = "Open AR Lens";
+    },
+    () => {
+      statusEl.innerText = "Location required to unlock experience";
     }
-  </script>
+  );
+</script>
 
 </body>
 </html>
+
