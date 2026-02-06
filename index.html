@@ -43,19 +43,7 @@
   const ts = params.get("ts");
 
   document.getElementById("hoodieId").innerText = hoodie || "Not Assigned";
-
-  /* ======================
-     1️⃣ TIME EXPIRY CHECK
-     ====================== */
-  const now = Date.now();
-  const expiryWindow = 5 * 60 * 1000; // 5 minutes
-
-  if (!ts || now - ts > expiryWindow) {
-    document.getElementById("status").innerHTML =
-      "<span class='blocked'>⛔ Link expired. Tap hoodie again.</span>";
-    throw new Error("Expired link");
-  }
-
+  
   /* ======================
      2️⃣ DEVICE LOCK
      ====================== */
