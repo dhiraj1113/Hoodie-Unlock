@@ -7,105 +7,104 @@
 
   <style>
     body {
-      background: #000;
-      color: #fff;
+      background: black;
+      color: white;
       font-family: Arial, sans-serif;
       text-align: center;
-      padding-top: 26vh;
+      padding-top: 25vh;
     }
-    h1 { font-size: 32px; }
-    p { margin-top: 10px; }
-    .status {
+    a {
+      display: inline-block;
       margin-top: 20px;
-      font-size: 15px;
-      opacity: 0.9;
+      padding: 14px 24px;
+      background: white;
+      color: black;
+      text-decoration: none;
+      font-weight: bold;
+      border-radius: 8px;
     }
   </style>
 </head>
 
 <body>
 
-  <h1>🔓 Hoodie Unlocked</h1>
-  <p>This hoodie is authentic.</p>
+<h1>🔓 Hoodie Unlocked</h1>
+<p id="status">Checking hoodie location...</p>
 
-  <p><strong>Hoodie ID:</strong> <span id="hoodieId">—</span></p>
-  <p class="status" id="status">Verifying experience…</p>
+<a id="lensBtn" style="display:none;" href="#">Open AR Lens</a>
 
-  <script>
-    // ----------------------------
-    // 1. READ HOODIE ID
-    // ----------------------------
-    const params = new URLSearchParams(window.location.search);
-    const hoodieId = params.get("hoodie") || "UNKNOWN";
-    document.getElementById("hoodieId").innerText = hoodieId;
+<script>
+  // 🔹 CHANGE THESE TO YOUR REAL SNAP LENS LINKS
+  const LENS = {
+    bangaloreDay: "https://www.snapchat.com/unlock/BANGALORE_DAY",
+    bangaloreNight: "https://www.snapchat.com/unlock/BANGALORE_NIGHT",
+    globalDay: "https://www.snapchat.com/unlock/GLOBAL_DAY",
+    globalNight: "https://www.snapchat.com/unlock/GLOBAL_NIGHT"
+  };
 
-    const statusEl = document.getElementById("status");
+  // Bangalore coordinates
+  const BLR_LAT = 12.9716;
+  const BLR_LON = 77.5946;
+  const ALLOWED_RADIUS_KM = 50; // Bangalore + nearby areas
 
-    // ----------------------------
-    // 2. TIME-BASED LOGIC
-    // ----------------------------
+  function distanceKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) *
+      Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+  }
+
+  function isDayTime() {
     const hour = new Date().getHours();
-    let timeSlot = "";
+    return hour >= 6 && hour < 18;
+  }
 
-    if (hour >= 6 && hour < 12) timeSlot = "morning";
-    else if (hour >= 12 && hour < 18) timeSlot = "day";
-    else timeSlot = "night";
+  function unlockLens(isBangalore) {
+    const day = isDayTime();
+    let lensURL;
 
-    // ----------------------------
-    // 3. LENS LINKS (REPLACE THESE)
-    // ----------------------------
-    const LENSES = {
-      bangalore: {
-        morning: "https://snapchat.com/unlock/?lens=BANGALORE_MORNING",
-        day: "https://snapchat.com/unlock/?lens=BANGALORE_DAY",
-        night: "https://snapchat.com/unlock/?lens=BANGALORE_NIGHT"
+    if (isBangalore) {
+      lensURL = day ? LENS.bangaloreDay : LENS.bangaloreNight;
+      document.getElementById("status").innerText =
+        "📍 Bangalore detected — Exclusive experience unlocked";
+    } else {
+      lensURL = day ? LENS.globalDay : LENS.globalNight;
+      document.getElementById("status").innerText =
+        "🌍 Global experience unlocked";
+    }
+
+    const btn = document.getElementById("lensBtn");
+    btn.href = lensURL;
+    btn.style.display = "inline-block";
+  }
+
+  if (!navigator.geolocation) {
+    document.getElementById("status").innerText =
+      "Location not supported. Loading global experience.";
+    unlockLens(false);
+  } else {
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        const userLat = position.coords.latitude;
+        const userLon = position.coords.longitude;
+
+        const dist = distanceKm(userLat, userLon, BLR_LAT, BLR_LON);
+        unlockLens(dist <= ALLOWED_RADIUS_KM);
       },
-      global: {
-        morning: "https://snapchat.com/unlock/?lens=GLOBAL_MORNING",
-        day: "https://snapchat.com/unlock/?lens=GLOBAL_DAY",
-        night: "https://snapchat.com/unlock/?lens=GLOBAL_NIGHT"
-      }
-    };
-
-    // ----------------------------
-    // 4. LOCATION CHECK
-    // ----------------------------
-    fetch("https://ipapi.co/json/")
-      .then(res => res.json())
-      .then(data => {
-        const city = (data.city || "").toLowerCase();
-        const region = city.includes("bangalore") ? "bangalore" : "global";
-
-        // ----------------------------
-        // 5. ANTI-LINK SHARING
-        // ----------------------------
-        const storageKey = `hoodie_${hoodieId}_${region}_${timeSlot}`;
-
-        if (localStorage.getItem(storageKey)) {
-          statusEl.innerHTML = `
-            ⚠ Already unlocked on this device<br>
-            <small>${region.toUpperCase()} • ${timeSlot.toUpperCase()}</small>
-          `;
-          return;
-        }
-
-        localStorage.setItem(storageKey, "true");
-
-        statusEl.innerHTML = `
-          ✅ ${region.toUpperCase()} ${timeSlot.toUpperCase()} experience unlocked
-        `;
-
-        // ----------------------------
-        // 6. REDIRECT TO LENS
-        // ----------------------------
-        setTimeout(() => {
-          window.location.href = LENSES[region][timeSlot];
-        }, 1200);
-      })
-      .catch(() => {
-        statusEl.innerHTML = "⚠ Unable to detect location.";
-      });
-  </script>
+      error => {
+        document.getElementById("status").innerText =
+          "Location denied. Loading global experience.";
+        unlockLens(false);
+      },
+      { enableHighAccuracy: true }
+    );
+  }
+</script>
 
 </body>
 </html>
