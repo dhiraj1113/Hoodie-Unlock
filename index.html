@@ -24,120 +24,142 @@
       border-radius: 8px;
     }
   </style>
+
+  <!-- 🔥 Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 
 <body>
 
 <h1>🔓 Hoodie Unlocked</h1>
-<p id="status">Checking hoodie location...</p>
+<p id="status">Authenticating hoodie…</p>
+<p id="timer"></p>
 
 <a id="lensBtn" style="display:none;" href="#">Open AR Lens</a>
 
 <script>
-  // 🔹 CHANGE THESE TO YOUR REAL SNAP LENS LINKS
-  const LENS = {
-    bangaloreDay: "https://www.snapchat.com/unlock/BANGALORE_DAY",
-    bangaloreNight: "https://www.snapchat.com/unlock/BANGALORE_NIGHT",
-    globalDay: "https://www.snapchat.com/unlock/GLOBAL_DAY",
-    globalNight: "https://www.snapchat.com/unlock/GLOBAL_NIGHT"
-  };
+/* ---------------- FIREBASE SETUP ---------------- */
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID"
+};
 
-  // Bangalore coordinates
-  const BLR_LAT = 12.9716;
-  const BLR_LON = 77.5946;
-  const ALLOWED_RADIUS_KM = 50; // Bangalore + nearby areas
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-  function distanceKm(lat1, lon1, lat2, lon2) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) *
-      Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-  }
+/* ---------------- CONFIG ---------------- */
+const LOCK_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 
-  function isDayTime() {
-    const hour = new Date().getHours();
-    return hour >= 6 && hour < 18;
-  }
+const LENS = {
+  bangaloreDay: "https://www.snapchat.com/unlock/BANGALORE_DAY",
+  bangaloreNight: "https://www.snapchat.com/unlock/BANGALORE_NIGHT",
+  globalDay: "https://www.snapchat.com/unlock/GLOBAL_DAY",
+  globalNight: "https://www.snapchat.com/unlock/GLOBAL_NIGHT"
+};
 
-  function unlockLens(isBangalore) {
-    const day = isDayTime();
-    let lensURL;
+const BLR_LAT = 12.9716;
+const BLR_LON = 77.5946;
+const ALLOWED_RADIUS_KM = 50;
 
-    if (isBangalore) {
-      lensURL = day ? LENS.bangaloreDay : LENS.bangaloreNight;
-      document.getElementById("status").innerText =
-        "📍 Bangalore detected — Exclusive experience unlocked";
-    } else {
-      lensURL = day ? LENS.globalDay : LENS.globalNight;
-      document.getElementById("status").innerText =
-        "🌍 Global experience unlocked";
-    }
+/* ---------------- HELPERS ---------------- */
+function distanceKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
 
-    const btn = document.getElementById("lensBtn");
-    btn.href = lensURL;
-    btn.style.display = "inline-block";
-  }
+function isDayTime() {
+  const h = new Date().getHours();
+  return h >= 6 && h < 18;
+}
 
+/* ---------------- EXPERIENCE ---------------- */
+function startExperience() {
   if (!navigator.geolocation) {
-    document.getElementById("status").innerText =
-      "Location not supported. Loading global experience.";
-    unlockLens(false);
+    unlock(false);
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const dist = distanceKm(
+        pos.coords.latitude,
+        pos.coords.longitude,
+        BLR_LAT,
+        BLR_LON
+      );
+      unlock(dist <= ALLOWED_RADIUS_KM);
+    },
+    () => unlock(false),
+    { enableHighAccuracy: true }
+  );
+}
+
+function unlock(isBangalore) {
+  const day = isDayTime();
+  const btn = document.getElementById("lensBtn");
+
+  let lensURL;
+  if (isBangalore) {
+    lensURL = day ? LENS.bangaloreDay : LENS.bangaloreNight;
+    status.innerText = "📍 Bangalore exclusive unlocked";
   } else {
-    navigator.geolocation.getCurrentPosition(
-      position => {
-        const userLat = position.coords.latitude;
-        const userLon = position.coords.longitude;
-
-        const dist = distanceKm(userLat, userLon, BLR_LAT, BLR_LON);
-        unlockLens(dist <= ALLOWED_RADIUS_KM);
-      },
-      error => {
-        document.getElementById("status").innerText =
-          "Location denied. Loading global experience.";
-        unlockLens(false);
-      },
-      { enableHighAccuracy: true }
-    );
-  }
-</script>
-<script>
-  const LOCK_TIMEOUT = 2 * 60 * 1000; // 2 minutes
-
-  async function checkAndLock() {
-    const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
-    if (!hoodieId) return;
-
-    const ref = db.collection("hoodies").doc(hoodieId);
-    const snap = await ref.get();
-    const now = Date.now();
-
-    if (snap.exists) {
-      const data = snap.data();
-
-      if (data.inUse && now - data.usedAt < LOCK_TIMEOUT) {
-        document.body.innerHTML = `
-          <h1>🚫 Hoodie already in use</h1>
-          <p>Please tap the hoodie again after a moment.</p>
-        `;
-        return;
-      }
-    }
-
-    await ref.set({
-      inUse: true,
-      usedAt: now
-    }, { merge: true });
-
-    // 👉 continue to lens / experience after this
-    startExperience();
+    lensURL = day ? LENS.globalDay : LENS.globalNight;
+    status.innerText = "🌍 Global experience unlocked";
   }
 
-  checkAndLock();
+  btn.href = lensURL;
+  btn.style.display = "inline-block";
+}
+
+/* ---------------- LOCK LOGIC ---------------- */
+async function checkAndLock() {
+  const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
+  if (!hoodieId) return;
+
+  const ref = db.collection("hoodies").doc(hoodieId);
+  const snap = await ref.get();
+  const now = Date.now();
+
+  if (snap.exists && snap.data().inUse && now - snap.data().usedAt < LOCK_TIMEOUT) {
+    document.body.innerHTML = `
+      <h1>🚫 Hoodie already in use</h1>
+      <p>Please try again shortly.</p>
+    `;
+    return;
+  }
+
+  await ref.set({ inUse: true, usedAt: now }, { merge: true });
+  startTimer();
+  startExperience();
+}
+
+/* ---------------- TIMER ---------------- */
+function startTimer() {
+  let t = 120;
+  const timer = document.getElementById("timer");
+  const i = setInterval(() => {
+    timer.innerText = `⏳ Session ends in ${t--}s`;
+    if (t < 0) clearInterval(i);
+  }, 1000);
+}
+
+/* ---------------- AUTO RELEASE ---------------- */
+window.addEventListener("beforeunload", async () => {
+  const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
+  if (!hoodieId) return;
+  await db.collection("hoodies").doc(hoodieId).set({ inUse: false }, { merge: true });
+});
+
+checkAndLock();
 </script>
 
 </body>
