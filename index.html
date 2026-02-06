@@ -11,99 +11,101 @@
       color: #fff;
       font-family: Arial, sans-serif;
       text-align: center;
-      padding-top: 25vh;
+      padding-top: 26vh;
     }
-    a {
-      display: inline-block;
-      margin-top: 24px;
-      padding: 14px 28px;
-      background: #fff;
-      color: #000;
-      text-decoration: none;
-      font-weight: bold;
-      border-radius: 8px;
-    }
-    .blocked {
-      color: #ff4d4d;
+    h1 { font-size: 32px; }
+    p { margin-top: 10px; }
+    .status {
+      margin-top: 20px;
+      font-size: 15px;
+      opacity: 0.9;
     }
   </style>
 </head>
 
 <body>
 
-<h1>🔓 Hoodie Unlocked</h1>
-<p id="status">Verifying authenticity…</p>
-<p><strong>Hoodie ID:</strong> <span id="hoodieId"></span></p>
+  <h1>🔓 Hoodie Unlocked</h1>
+  <p>This hoodie is authentic.</p>
 
-<a id="lensLink" style="display:none" target="_blank">Open AR Lens</a>
+  <p><strong>Hoodie ID:</strong> <span id="hoodieId">—</span></p>
+  <p class="status" id="status">Verifying experience…</p>
 
-<script>
-  const params = new URLSearchParams(window.location.search);
-  const hoodie = params.get("hoodie");
-  const ts = params.get("ts");
+  <script>
+    // ----------------------------
+    // 1. READ HOODIE ID
+    // ----------------------------
+    const params = new URLSearchParams(window.location.search);
+    const hoodieId = params.get("hoodie") || "UNKNOWN";
+    document.getElementById("hoodieId").innerText = hoodieId;
 
-  document.getElementById("hoodieId").innerText = hoodie || "Not Assigned";
-  
-  /* ======================
-     2️⃣ DEVICE LOCK
-     ====================== */
-  const deviceKey = "used_" + hoodie;
+    const statusEl = document.getElementById("status");
 
-  if (localStorage.getItem(deviceKey)) {
-    document.getElementById("status").innerHTML =
-      "<span class='blocked'>⚠️ Already unlocked on this device.</span>";
-    throw new Error("Device already used");
-  }
+    // ----------------------------
+    // 2. TIME-BASED LOGIC
+    // ----------------------------
+    const hour = new Date().getHours();
+    let timeSlot = "";
 
-  localStorage.setItem(deviceKey, "true");
+    if (hour >= 6 && hour < 12) timeSlot = "morning";
+    else if (hour >= 12 && hour < 18) timeSlot = "day";
+    else timeSlot = "night";
 
-  /* ======================
-     3️⃣ LOCATION LOCK
-     ====================== */
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      const lat = pos.coords.latitude;
-      const lon = pos.coords.longitude;
-
-      // Bangalore geo-fence
-      const isBangalore = lat > 12 && lat < 14 && lon > 77 && lon < 78;
-
-      if (!isBangalore) {
-        document.getElementById("status").innerHTML =
-          "<span class='blocked'>📍 Location restricted.</span>";
-        return;
+    // ----------------------------
+    // 3. LENS LINKS (REPLACE THESE)
+    // ----------------------------
+    const LENSES = {
+      bangalore: {
+        morning: "https://snapchat.com/unlock/?lens=BANGALORE_MORNING",
+        day: "https://snapchat.com/unlock/?lens=BANGALORE_DAY",
+        night: "https://snapchat.com/unlock/?lens=BANGALORE_NIGHT"
+      },
+      global: {
+        morning: "https://snapchat.com/unlock/?lens=GLOBAL_MORNING",
+        day: "https://snapchat.com/unlock/?lens=GLOBAL_DAY",
+        night: "https://snapchat.com/unlock/?lens=GLOBAL_NIGHT"
       }
+    };
 
-      /* ======================
-         4️⃣ DYNAMIC LENS LOGIC
-         ====================== */
-      const hour = new Date().getHours();
-      const isNight = hour >= 18 || hour < 6;
+    // ----------------------------
+    // 4. LOCATION CHECK
+    // ----------------------------
+    fetch("https://ipapi.co/json/")
+      .then(res => res.json())
+      .then(data => {
+        const city = (data.city || "").toLowerCase();
+        const region = city.includes("bangalore") ? "bangalore" : "global";
 
-      let lensURL = "";
+        // ----------------------------
+        // 5. ANTI-LINK SHARING
+        // ----------------------------
+        const storageKey = `hoodie_${hoodieId}_${region}_${timeSlot}`;
 
-      if (isNight) {
-        lensURL = "https://www.snapchat.com/unlock/?uuid=NIGHT_LENS_UUID";
-        document.getElementById("status").innerText =
-          "🌙 Night experience unlocked";
-      } else {
-        lensURL = "https://www.snapchat.com/unlock/?uuid=DAY_LENS_UUID";
-        document.getElementById("status").innerText =
-          "☀️ Day experience unlocked";
-      }
+        if (localStorage.getItem(storageKey)) {
+          statusEl.innerHTML = `
+            ⚠ Already unlocked on this device<br>
+            <small>${region.toUpperCase()} • ${timeSlot.toUpperCase()}</small>
+          `;
+          return;
+        }
 
-      const lensBtn = document.getElementById("lensLink");
-      lensBtn.href = lensURL;
-      lensBtn.style.display = "inline-block";
-    },
-    () => {
-      document.getElementById("status").innerHTML =
-        "<span class='blocked'>📍 Location permission required.</span>";
-    }
-  );
-</script>
+        localStorage.setItem(storageKey, "true");
+
+        statusEl.innerHTML = `
+          ✅ ${region.toUpperCase()} ${timeSlot.toUpperCase()} experience unlocked
+        `;
+
+        // ----------------------------
+        // 6. REDIRECT TO LENS
+        // ----------------------------
+        setTimeout(() => {
+          window.location.href = LENSES[region][timeSlot];
+        }, 1200);
+      })
+      .catch(() => {
+        statusEl.innerHTML = "⚠ Unable to detect location.";
+      });
+  </script>
 
 </body>
 </html>
-
-
