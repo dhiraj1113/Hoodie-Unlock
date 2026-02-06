@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Hoodie Unlocked</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
     body {
       background: #000;
@@ -24,12 +25,19 @@
     }
   </style>
 </head>
+
 <body>
 
   <h1>🔓 Hoodie Unlocked</h1>
-  <p>Exclusive experience activated.</p>
+  <p>This hoodie is authentic.</p>
 
-  <a href="#">Open AR Lens</a>
+  <p><strong>Hoodie ID:</strong> <span id="hoodieId"></span></p>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const hoodie = params.get("hoodie") || "Not Assigned";
+    document.getElementById("hoodieId").innerText = hoodie;
+  </script>
 
 </body>
 </html>
