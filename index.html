@@ -39,6 +39,7 @@
 <a id="lensBtn" style="display:none;" href="#">Open AR Lens</a>
 
 <script>
+  console.log("STEP 1: Script started");
 /* ---------------- FIREBASE SETUP ---------------- */
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
@@ -48,6 +49,8 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+  console.log("STEP 2: Firebase initialized");
+
 
 /* ---------------- CONFIG ---------------- */
 const LOCK_TIMEOUT = 2 * 60 * 1000; // 2 minutes
@@ -122,10 +125,13 @@ function unlock(isBangalore) {
 
 /* ---------------- LOCK LOGIC ---------------- */
 async function checkAndLock() {
+  console.log("STEP 3: checkAndLock() called");
+  
   const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
   if (!hoodieId) return;
 
   const ref = db.collection("hoodies").doc(hoodieId);
+  console.log("STEP 4: About to read Firestore");
   const snap = await ref.get();
   const now = Date.now();
 
