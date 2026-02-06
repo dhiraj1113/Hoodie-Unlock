@@ -105,6 +105,40 @@
     );
   }
 </script>
+<script>
+  const LOCK_TIMEOUT = 2 * 60 * 1000; // 2 minutes
+
+  async function checkAndLock() {
+    const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
+    if (!hoodieId) return;
+
+    const ref = db.collection("hoodies").doc(hoodieId);
+    const snap = await ref.get();
+    const now = Date.now();
+
+    if (snap.exists) {
+      const data = snap.data();
+
+      if (data.inUse && now - data.usedAt < LOCK_TIMEOUT) {
+        document.body.innerHTML = `
+          <h1>🚫 Hoodie already in use</h1>
+          <p>Please tap the hoodie again after a moment.</p>
+        `;
+        return;
+      }
+    }
+
+    await ref.set({
+      inUse: true,
+      usedAt: now
+    }, { merge: true });
+
+    // 👉 continue to lens / experience after this
+    startExperience();
+  }
+
+  checkAndLock();
+</script>
 
 </body>
 </html>
