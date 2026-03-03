@@ -1,33 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Hoodie Unlocked</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>Hoodie Unlocked</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body {
-      background: black;
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding-top: 25vh;
-    }
-    a {
-      display: inline-block;
-      margin-top: 20px;
-      padding: 14px 24px;
-      background: white;
-      color: black;
-      text-decoration: none;
-      font-weight: bold;
-      border-radius: 8px;
-    }
-  </style>
+<style>
+body {
+  background: black;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  padding-top: 25vh;
+  transition: background 0.5s ease, color 0.5s ease;
+}
+a {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 14px 24px;
+  background: white;
+  color: black;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 8px;
+}
+</style>
 
-  <!-- Firebase SDKs (COMPAT – required) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 
 <body>
@@ -35,31 +35,30 @@
 <h1>🔓 Hoodie Unlocked</h1>
 <p id="status">Authenticating hoodie…</p>
 <p id="timer"></p>
-
 <a id="lensBtn" style="display:none;" href="#">Open AR Lens</a>
 
 <script>
-/* ================= FIREBASE SETUP ================= */
+
+/* ================= FIREBASE ================= */
+
 const firebaseConfig = {
-  apiKey: "AIzaSyBn-6yjJd7C4PHF43zj-BEL_bqp4s9S5Yc",
+  apiKey: "YOUR_API_KEY",
   authDomain: "hoodie-lock.firebaseapp.com",
   projectId: "hoodie-lock",
-  storageBucket: "hoodie-lock.firebasestorage.app",
-  messagingSenderId: "110562874571",
-  appId: "1:110562874571:web:87fa63e77cac10924c774e"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 /* ================= CONFIG ================= */
+
 const LOCK_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 
 const LENS = {
   bangaloreDay: "https://www.snapchat.com/unlock/BANGALORE_DAY",
   bangaloreNight: "https://www.snapchat.com/unlock/BANGALORE_NIGHT",
-  globalDay: "https://www.snapchat.com/unlock/?type=SNAPCODE&uuid=18f417f3c8354a2795e115939c19908c&metadata=01",
-  globalNight: "https://www.snapchat.com/unlock/?type=SNAPCODE&uuid=18f417f3c8354a2795e115939c19908c&metadata=01"
+  globalDay: "https://www.snapchat.com/unlock/GLOBAL_DAY",
+  globalNight: "https://www.snapchat.com/unlock/GLOBAL_NIGHT"
 };
 
 const BLR_LAT = 12.9716;
@@ -67,6 +66,7 @@ const BLR_LON = 77.5946;
 const ALLOWED_RADIUS_KM = 50;
 
 /* ================= HELPERS ================= */
+
 function distanceKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -84,9 +84,64 @@ function isDayTime() {
   return h >= 6 && h < 18;
 }
 
-/* ================= EXPERIENCE ================= */
-function startExperience() {
+function applyDayNightTheme() {
+  if (isDayTime()) {
+    document.body.style.background = "white";
+    document.body.style.color = "black";
+  } else {
+    document.body.style.background = "black";
+    document.body.style.color = "white";
+  }
+}
+
+/* ================= LOCK SYSTEM ================= */
+
+async function checkAndLock() {
   const statusEl = document.getElementById("status");
+  const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
+
+  if (!hoodieId) {
+    statusEl.innerText = "❌ Invalid hoodie link";
+    return;
+  }
+
+  const ref = db.collection("hoodies").doc(hoodieId);
+
+  try {
+    await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(ref);
+      const now = Date.now();
+
+      if (doc.exists) {
+        const data = doc.data();
+        if (data.inUse && now - data.usedAt < LOCK_TIMEOUT) {
+          throw new Error("IN_USE");
+        }
+      }
+
+      transaction.set(ref, {
+        inUse: true,
+        usedAt: now
+      }, { merge: true });
+    });
+
+    statusEl.innerText = "✅ Hoodie authenticated";
+    startTimer();
+    startExperience();
+
+  } catch (e) {
+    document.body.innerHTML = `
+      <h1>🚫 Hoodie already in use</h1>
+      <p>Please try again in 2 minutes.</p>
+    `;
+  }
+}
+
+/* ================= EXPERIENCE ================= */
+
+function startExperience() {
+
+  applyDayNightTheme();
 
   if (!navigator.geolocation) {
     unlock(false);
@@ -103,10 +158,7 @@ function startExperience() {
       );
       unlock(dist <= ALLOWED_RADIUS_KM);
     },
-    () => {
-      statusEl.innerText = "📍 Location denied — loading global experience";
-      unlock(false);
-    },
+    () => unlock(false),
     { enableHighAccuracy: true }
   );
 }
@@ -120,71 +172,45 @@ function unlock(isBangalore) {
 
   if (isBangalore) {
     lensURL = day ? LENS.bangaloreDay : LENS.bangaloreNight;
-    statusEl.innerText = "📍 Bangalore exclusive experience unlocked";
+    statusEl.innerText = "📍 Bangalore Exclusive Experience";
   } else {
     lensURL = day ? LENS.globalDay : LENS.globalNight;
-    statusEl.innerText = "🌍 Global experience unlocked";
+    statusEl.innerText = "🌍 Global Experience";
   }
 
   btn.href = lensURL;
   btn.style.display = "inline-block";
 }
 
-/* ================= LOCK LOGIC ================= */
-async function checkAndLock() {
-  const statusEl = document.getElementById("status");
-  const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
-
-  if (!hoodieId) {
-    statusEl.innerText = "❌ Invalid hoodie link";
-    return;
-  }
-
-  const ref = db.collection("hoodies").doc(hoodieId);
-  const snap = await ref.get();
-  const now = Date.now();
-
-  if (snap.exists) {
-    const data = snap.data();
-    if (data.inUse && now - data.usedAt < LOCK_TIMEOUT) {
-      document.body.innerHTML = `
-        <h1>🚫 Hoodie already in use</h1>
-        <p>Please try again shortly.</p>
-      `;
-      return;
-    }
-  }
-
-  await ref.set({ inUse: true, usedAt: now }, { merge: true });
-
-  statusEl.innerText = "✅ Hoodie authenticated";
-  startTimer();
-  startExperience();
-}
-
 /* ================= TIMER ================= */
+
 function startTimer() {
   let t = 120;
   const timer = document.getElementById("timer");
 
-  const i = setInterval(() => {
+  const interval = setInterval(() => {
     timer.innerText = `⏳ Session ends in ${t--}s`;
-    if (t < 0) clearInterval(i);
+    if (t < 0) {
+      clearInterval(interval);
+      releaseLock();
+    }
   }, 1000);
 }
 
 /* ================= AUTO RELEASE ================= */
-window.addEventListener("beforeunload", async () => {
+
+async function releaseLock() {
   const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
   if (!hoodieId) return;
+
   await db.collection("hoodies").doc(hoodieId).set(
     { inUse: false },
     { merge: true }
   );
-});
+}
 
 checkAndLock();
-</script>
 
+</script>
 </body>
 </html>
