@@ -25,14 +25,13 @@
     }
   </style>
 
-  <!-- Firebase SDKs (COMPAT – required) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 
 <body>
 
-<h1>🔓 Hoodie Unlocked</h1>
+<h1 id="title">🔓 Hoodie Unlocked</h1>
 <p id="status">Authenticating hoodie…</p>
 <p id="timer"></p>
 
@@ -53,7 +52,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 /* ================= CONFIG ================= */
-const LOCK_TIMEOUT = 2 * 60 * 1000; // 2 minutes
+const LOCK_TIMEOUT = 2 * 60 * 1000;
 
 const LENS = {
   bangaloreDay: "https://www.snapchat.com/unlock/BANGALORE_DAY",
@@ -85,11 +84,79 @@ function isDayTime() {
 }
 
 /* ================= EXPERIENCE ================= */
-function startExperience() {
-  const statusEl = document.getElementById("status");
+async function startExperience(isBangalore) {
+  const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
+  const ref = db.collection("hoodies").doc(hoodieId);
+  const snap = await ref.get();
 
+  if (!snap.exists) {
+    document.getElementById("status").innerText = "❌ Hoodie not registered in system";
+    return;
+  }
+
+  const data = snap.data();
+  const statusEl = document.getElementById("status");
+  const btn = document.getElementById("lensBtn");
+  const titleEl = document.getElementById("title");
+
+  let deviceId = localStorage.getItem("deviceId");
+
+  /* ===== OWNER NOT REGISTERED ===== */
+  if (!data.ownerRegistered) {
+    statusEl.innerHTML = `
+      This hoodie is unclaimed.<br><br>
+      Double tap anywhere to activate ownership.
+    `;
+
+    let tapCount = 0;
+
+    document.body.addEventListener("click", async () => {
+      tapCount++;
+      setTimeout(() => tapCount = 0, 600);
+
+      if (tapCount === 2) {
+        const newId = crypto.randomUUID();
+        localStorage.setItem("deviceId", newId);
+
+        await ref.update({
+          ownerRegistered: true,
+          registeredDevice: newId
+        });
+
+        location.reload();
+      }
+    });
+
+    return;
+  }
+
+  /* ===== OWNER MATCH ===== */
+  if (deviceId && deviceId === data.registeredDevice) {
+    titleEl.innerText = "🔓 Welcome " + data.name;
+    statusEl.innerText = "Your Dragon Hoodie has recognized you.";
+  } else {
+    titleEl.innerText = "🔓 Hoodie Unlocked";
+    statusEl.innerText = "Experience unlocked.";
+  }
+
+  /* ===== LENS SELECTION ===== */
+  const day = isDayTime();
+  let lensURL;
+
+  if (isBangalore) {
+    lensURL = day ? LENS.bangaloreDay : LENS.bangaloreNight;
+  } else {
+    lensURL = day ? LENS.globalDay : LENS.globalNight;
+  }
+
+  btn.href = lensURL;
+  btn.style.display = "inline-block";
+}
+
+/* ================= LOCATION CHECK ================= */
+function detectLocation() {
   if (!navigator.geolocation) {
-    unlock(false);
+    startExperience(false);
     return;
   }
 
@@ -101,42 +168,21 @@ function startExperience() {
         BLR_LAT,
         BLR_LON
       );
-      unlock(dist <= ALLOWED_RADIUS_KM);
+      startExperience(dist <= ALLOWED_RADIUS_KM);
     },
     () => {
-      statusEl.innerText = "📍 Location denied — loading global experience";
-      unlock(false);
+      startExperience(false);
     },
     { enableHighAccuracy: true }
   );
 }
 
-function unlock(isBangalore) {
-  const statusEl = document.getElementById("status");
-  const btn = document.getElementById("lensBtn");
-  const day = isDayTime();
-
-  let lensURL;
-
-  if (isBangalore) {
-    lensURL = day ? LENS.bangaloreDay : LENS.bangaloreNight;
-    statusEl.innerText = "📍 Bangalore exclusive experience unlocked";
-  } else {
-    lensURL = day ? LENS.globalDay : LENS.globalNight;
-    statusEl.innerText = "🌍 Global experience unlocked";
-  }
-
-  btn.href = lensURL;
-  btn.style.display = "inline-block";
-}
-
 /* ================= LOCK LOGIC ================= */
 async function checkAndLock() {
-  const statusEl = document.getElementById("status");
   const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
 
   if (!hoodieId) {
-    statusEl.innerText = "❌ Invalid hoodie link";
+    document.getElementById("status").innerText = "❌ Invalid hoodie link";
     return;
   }
 
@@ -157,9 +203,8 @@ async function checkAndLock() {
 
   await ref.set({ inUse: true, usedAt: now }, { merge: true });
 
-  statusEl.innerText = "✅ Hoodie authenticated";
   startTimer();
-  startExperience();
+  detectLocation();
 }
 
 /* ================= TIMER ================= */
