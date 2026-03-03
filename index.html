@@ -1,45 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Hoodie Unlocked</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>Hoodie Experience</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body {
-      background: black;
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding-top: 25vh;
-    }
-    a {
-      display: inline-block;
-      margin-top: 20px;
-      padding: 14px 24px;
-      background: white;
-      color: black;
-      text-decoration: none;
-      font-weight: bold;
-      border-radius: 8px;
-    }
-  </style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-  <!-- Firebase SDKs (COMPAT – required) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+body{
+  font-family: Arial, sans-serif;
+  text-align: center;
+  padding-top: 30vh;
+  transition: background 0.4s ease, color 0.4s ease;
+}
+
+.day{
+  background: white;
+  color: black;
+}
+
+.night{
+  background: black;
+  color: white;
+}
+</style>
 </head>
 
 <body>
 
-<h1>🔓 Hoodie Unlocked</h1>
-<p id="status">Authenticating hoodie…</p>
-<p id="timer"></p>
-
-<a id="lensBtn" style="display:none;" href="#">Open AR Lens</a>
+<h2 id="status">Authenticating hoodie...</h2>
 
 <script>
-/* ================= FIREBASE SETUP ================= */
+
+/* ================= FIREBASE ================= */
+
 const firebaseConfig = {
   apiKey: "AIzaSyBn-6yjJd7C4PHF43zj-BEL_bqp4s9S5Yc",
   authDomain: "hoodie-lock.firebaseapp.com",
@@ -53,7 +49,8 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 /* ================= CONFIG ================= */
-const LOCK_TIMEOUT = 2 * 60 * 1000; // 2 minutes
+
+const LOCK_TIMEOUT = 120000; // 2 minutes
 
 const LENS = {
   bangaloreDay: "https://www.snapchat.com/unlock/BANGALORE_DAY",
@@ -67,76 +64,47 @@ const BLR_LON = 77.5946;
 const ALLOWED_RADIUS_KM = 50;
 
 /* ================= HELPERS ================= */
-function distanceKm(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) *
-    Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) ** 2;
-  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+
+function applyTheme(){
+  const hour = new Date().getHours();
+
+  if(hour >= 6 && hour < 18){
+    document.body.classList.add("day");
+  } else {
+    document.body.classList.add("night");
+  }
 }
 
-function isDayTime() {
+function isDayTime(){
   const h = new Date().getHours();
   return h >= 6 && h < 18;
 }
 
-/* ================= EXPERIENCE ================= */
-function startExperience() {
-  const statusEl = document.getElementById("status");
+function distanceKm(lat1, lon1, lat2, lon2){
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI/180;
+  const dLon = (lon2 - lon1) * Math.PI/180;
 
-  if (!navigator.geolocation) {
-    unlock(false);
-    return;
-  }
+  const a =
+    Math.sin(dLat/2)**2 +
+    Math.cos(lat1*Math.PI/180) *
+    Math.cos(lat2*Math.PI/180) *
+    Math.sin(dLon/2)**2;
 
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      const dist = distanceKm(
-        pos.coords.latitude,
-        pos.coords.longitude,
-        BLR_LAT,
-        BLR_LON
-      );
-      unlock(dist <= ALLOWED_RADIUS_KM);
-    },
-    () => {
-      statusEl.innerText = "📍 Location denied — loading global experience";
-      unlock(false);
-    },
-    { enableHighAccuracy: true }
-  );
+  return R * (2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 }
 
-function unlock(isBangalore) {
-  const statusEl = document.getElementById("status");
-  const btn = document.getElementById("lensBtn");
-  const day = isDayTime();
+/* ================= MAIN ================= */
 
-  let lensURL;
+async function start(){
 
-  if (isBangalore) {
-    lensURL = day ? LENS.bangaloreDay : LENS.bangaloreNight;
-    statusEl.innerText = "📍 Bangalore exclusive experience unlocked";
-  } else {
-    lensURL = day ? LENS.globalDay : LENS.globalNight;
-    statusEl.innerText = "🌍 Global experience unlocked";
-  }
+  applyTheme();
 
-  btn.href = lensURL;
-  btn.style.display = "inline-block";
-}
-
-/* ================= LOCK LOGIC ================= */
-async function checkAndLock() {
-  const statusEl = document.getElementById("status");
+  const status = document.getElementById("status");
   const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
 
-  if (!hoodieId) {
-    statusEl.innerText = "❌ Invalid hoodie link";
+  if(!hoodieId){
+    status.innerText = "Invalid hoodie link.";
     return;
   }
 
@@ -144,50 +112,74 @@ async function checkAndLock() {
   const snap = await ref.get();
   const now = Date.now();
 
-  if (snap.exists) {
+  if(snap.exists){
     const data = snap.data();
-    if (data.inUse && now - data.usedAt < LOCK_TIMEOUT) {
-      document.body.innerHTML = `
-        <h1>🚫 Hoodie already in use</h1>
-        <p>Please try again shortly.</p>
-      `;
+
+    if(data.inUse && now - data.usedAt < LOCK_TIMEOUT){
+      status.innerText = "Hoodie already in use.";
       return;
     }
   }
 
-  await ref.set({ inUse: true, usedAt: now }, { merge: true });
+  // Lock hoodie
+  await ref.set({
+    inUse: true,
+    usedAt: now
+  }, { merge:true });
 
-  statusEl.innerText = "✅ Hoodie authenticated";
-  startTimer();
-  startExperience();
+  status.innerText = "Checking location...";
+
+  navigator.geolocation.getCurrentPosition(
+
+    function(position){
+
+      const dist = distanceKm(
+        position.coords.latitude,
+        position.coords.longitude,
+        BLR_LAT,
+        BLR_LON
+      );
+
+      const isBLR = dist <= ALLOWED_RADIUS_KM;
+      const isDay = isDayTime();
+
+      let url;
+
+      if(isBLR){
+        url = isDay ? LENS.bangaloreDay : LENS.bangaloreNight;
+      } else {
+        url = isDay ? LENS.globalDay : LENS.globalNight;
+      }
+
+      window.location.href = url;
+    },
+
+    function(){
+      status.innerText = "Location denied. Loading global.";
+      const isDay = isDayTime();
+      const url = isDay ? LENS.globalDay : LENS.globalNight;
+      window.location.href = url;
+    },
+
+    { enableHighAccuracy:true }
+
+  );
 }
 
-/* ================= TIMER ================= */
-function startTimer() {
-  let t = 120;
-  const timer = document.getElementById("timer");
-
-  const i = setInterval(() => {
-    timer.innerText = `⏳ Session ends in ${t--}s`;
-    if (t < 0) clearInterval(i);
-  }, 1000);
-}
-
-/* ================= AUTO RELEASE ================= */
-window.addEventListener("beforeunload", async () => {
+/* Release lock when leaving */
+window.addEventListener("beforeunload", async ()=>{
   const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
-  if (!hoodieId) return;
+  if(!hoodieId) return;
+
   await db.collection("hoodies").doc(hoodieId).set(
-    { inUse: false },
-    { merge: true }
+    { inUse:false },
+    { merge:true }
   );
 });
 
-checkAndLock();
+start();
+
 </script>
 
 </body>
 </html>
-
-
-
