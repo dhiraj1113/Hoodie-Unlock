@@ -9,307 +9,290 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <style>
-* { box-sizing:border-box; }
+*{box-sizing:border-box;margin:0;padding:0}
 
-body {
-  margin:0;
+body{
   font-family:-apple-system,BlinkMacSystemFont,sans-serif;
   text-align:center;
-  transition:background 0.8s ease, color 0.8s ease;
   overflow:hidden;
+  transition:background 1s ease,color 1s ease;
 }
 
-.container {
+/* Animated gradient background */
+.day{
+  background:linear-gradient(120deg,#f6f7fb,#e9edf5,#f6f7fb);
+  background-size:200% 200%;
+  animation:gradientMove 8s ease infinite;
+  color:#111;
+}
+
+.night{
+  background:linear-gradient(120deg,#0f0f14,#1a1a24,#0f0f14);
+  background-size:200% 200%;
+  animation:gradientMove 10s ease infinite;
+  color:#fff;
+}
+
+@keyframes gradientMove{
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+
+/* Subtle dragon watermark */
+.watermark{
+  position:absolute;
+  inset:0;
+  background:url("https://images.unsplash.com/photo-1611221786917-1d0db1f2fd56?q=80&w=1600") center/cover no-repeat;
+  opacity:0.05;
+  filter:blur(2px);
+  pointer-events:none;
+}
+
+/* Content */
+.container{
+  position:relative;
+  z-index:2;
   padding:25vh 20px;
   opacity:0;
   transform:translateY(20px);
   animation:fadeIn 1s ease forwards;
 }
 
-@keyframes fadeIn {
-  to { opacity:1; transform:translateY(0); }
+@keyframes fadeIn{
+  to{opacity:1;transform:translateY(0)}
 }
 
-/* Day Theme */
-.day {
-  background:linear-gradient(135deg,#f8f9fa,#e9ecef);
-  color:#111;
-}
-
-/* Night Theme */
-.night {
-  background:radial-gradient(circle at top,#1a1a1a,#000);
-  color:#fff;
-}
-
-/* Golden owner glow */
-.owner {
-  text-shadow:0 0 20px rgba(255,215,0,0.8);
-}
-
-button, a {
-  display:inline-block;
-  margin-top:25px;
-  padding:14px 30px;
-  border-radius:12px;
+h1{
+  font-size:32px;
   font-weight:600;
-  font-size:16px;
+  margin-bottom:10px;
+}
+
+p{
+  opacity:.7;
+  margin-bottom:10px;
+}
+
+.owner{
+  text-shadow:0 0 25px rgba(255,215,0,0.9);
+}
+
+button{
+  margin-top:25px;
+  padding:15px 40px;
   border:none;
+  border-radius:14px;
+  font-size:16px;
+  font-weight:600;
   cursor:pointer;
-  text-decoration:none;
   transition:all .3s ease;
 }
 
-.day button, .day a {
+.day button{
   background:#111;
   color:#fff;
 }
 
-.night button, .night a {
+.night button{
   background:#fff;
   color:#000;
 }
 
-button:hover, a:hover {
+button:hover{
   transform:scale(1.05);
 }
 
-#celestial {
+#celestial{
   position:absolute;
   top:30px;
   right:30px;
   font-size:28px;
+  z-index:3;
 }
 
-#timer {
-  margin-top:10px;
-  opacity:0.7;
+#timer{
+  opacity:.5;
 }
 </style>
 </head>
 
 <body>
 
+<div class="watermark"></div>
 <div id="celestial"></div>
 
 <div class="container">
   <h1 id="title">Authenticating...</h1>
   <p id="status"></p>
   <p id="timer"></p>
-  <button id="claimBtn" style="display:none;">Activate My Hoodie</button>
-  <a id="lensBtn" style="display:none;">Enter Experience</a>
+  <button id="mainBtn" style="display:none;"></button>
 </div>
 
 <script>
 
-/* ================= FIREBASE ================= */
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBn-6yjJd7C4PHF43zj-BEL_bqp4s9S5Yc",
-  authDomain: "hoodie-lock.firebaseapp.com",
-  projectId: "hoodie-lock",
-  storageBucket: "hoodie-lock.firebasestorage.app",
-  messagingSenderId: "110562874571",
-  appId: "1:110562874571:web:87fa63e77cac10924c774e"
+/* FIREBASE */
+const firebaseConfig={
+apiKey:"AIzaSyBn-6yjJd7C4PHF43zj-BEL_bqp4s9S5Yc",
+authDomain:"hoodie-lock.firebaseapp.com",
+projectId:"hoodie-lock",
+storageBucket:"hoodie-lock.firebasestorage.app",
+messagingSenderId:"110562874571",
+appId:"1:110562874571:web:87fa63e77cac10924c774e"
 };
 
 firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const db=firebase.firestore();
 
-/* ================= CONFIG ================= */
+const LOCK_TIMEOUT=120000;
 
-const LOCK_TIMEOUT = 2 * 60 * 1000;
-
-const LENS = {
-  bangaloreDay:"https://www.snapchat.com/unlock/BANGALORE_DAY",
-  bangaloreNight:"https://www.snapchat.com/unlock/BANGALORE_NIGHT",
-  globalDay:"https://www.snapchat.com/unlock/?type=SNAPCODE&uuid=18f417f3c8354a2795e115939c19908c&metadata=01",
-  globalNight:"https://www.snapchat.com/unlock/?type=SNAPCODE&uuid=18f417f3c8354a2795e115939c19908c&metadata=01"
+const LENS={
+bangaloreDay:"https://www.snapchat.com/unlock/BANGALORE_DAY",
+bangaloreNight:"https://www.snapchat.com/unlock/BANGALORE_NIGHT",
+globalDay:"https://www.snapchat.com/unlock/?type=SNAPCODE&uuid=18f417f3c8354a2795e115939c19908c&metadata=01",
+globalNight:"https://www.snapchat.com/unlock/?type=SNAPCODE&uuid=18f417f3c8354a2795e115939c19908c&metadata=01"
 };
 
-const BLR_LAT = 12.9716;
-const BLR_LON = 77.5946;
-const ALLOWED_RADIUS_KM = 50;
+const BLR_LAT=12.9716;
+const BLR_LON=77.5946;
+const ALLOWED_RADIUS_KM=50;
 
-/* ================= DAY / NIGHT ================= */
-
-function isDayTime(){
-  const h = new Date().getHours();
-  return h >= 6 && h < 18;
+/* DAY/NIGHT */
+function isDay(){
+const h=new Date().getHours();
+return h>=6&&h<18;
 }
 
 function applyTheme(){
-  const celestial = document.getElementById("celestial");
-  if(isDayTime()){
-    document.body.classList.add("day");
-    celestial.innerText = "☀️";
-  } else {
-    document.body.classList.add("night");
-    celestial.innerText = "🌙";
-  }
+const celestial=document.getElementById("celestial");
+if(isDay()){
+document.body.classList.add("day");
+celestial.innerText="☀️";
+}else{
+document.body.classList.add("night");
+celestial.innerText="🌙";
+}
 }
 
-/* ================= UTIL ================= */
-
-function distanceKm(lat1,lon1,lat2,lon2){
-  const R=6371;
-  const dLat=(lat2-lat1)*Math.PI/180;
-  const dLon=(lon2-lon1)*Math.PI/180;
-  const a=Math.sin(dLat/2)**2+
-  Math.cos(lat1*Math.PI/180)*
-  Math.cos(lat2*Math.PI/180)*
-  Math.sin(dLon/2)**2;
-  return R*(2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
+/* DISTANCE */
+function distanceKm(a,b,c,d){
+const R=6371;
+const dLat=(c-a)*Math.PI/180;
+const dLon=(d-b)*Math.PI/180;
+const x=Math.sin(dLat/2)**2+
+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
+return R*(2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)));
 }
 
-/* ================= MAIN ================= */
+/* MAIN */
+async function init(){
 
-async function checkAndLock(){
+const hoodieId=new URLSearchParams(window.location.search).get("hoodie");
+if(!hoodieId){document.getElementById("title").innerText="Invalid Hoodie";return;}
 
-  const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
-  if(!hoodieId){
-    document.getElementById("title").innerText="Invalid Hoodie";
-    return;
-  }
+const ref=db.collection("hoodies").doc(hoodieId);
+const snap=await ref.get();
+const now=Date.now();
 
-  const ref = db.collection("hoodies").doc(hoodieId);
-  const snap = await ref.get();
-  const now = Date.now();
-
-  if(snap.exists){
-    const data = snap.data();
-    if(data.inUse && now - data.usedAt < LOCK_TIMEOUT){
-      document.body.innerHTML="<h1>Hoodie Currently In Use</h1>";
-      return;
-    }
-  }
-
-  await ref.set({ inUse:true, usedAt:now }, { merge:true });
-
-  startTimer();
-  detectLocation(ref);
+if(snap.exists){
+const d=snap.data();
+if(d.inUse&&now-d.usedAt<LOCK_TIMEOUT){
+document.body.innerHTML="<h1>Hoodie In Use</h1>";
+return;
+}
 }
 
-/* ================= LOCATION ================= */
+await ref.set({inUse:true,usedAt:now},{merge:true});
+startTimer();
 
-function detectLocation(ref){
-
-  if(!navigator.geolocation){
-    startExperience(false, ref);
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    pos=>{
-      const dist = distanceKm(
-        pos.coords.latitude,
-        pos.coords.longitude,
-        BLR_LAT,
-        BLR_LON
-      );
-      startExperience(dist <= ALLOWED_RADIUS_KM, ref);
-    },
-    ()=> startExperience(false, ref),
-    { enableHighAccuracy:true }
-  );
+navigator.geolocation.getCurrentPosition(pos=>{
+const dist=distanceKm(pos.coords.latitude,pos.coords.longitude,BLR_LAT,BLR_LON);
+startExperience(ref,dist<=ALLOWED_RADIUS_KM);
+},()=>startExperience(ref,false),{enableHighAccuracy:true});
 }
 
-/* ================= EXPERIENCE ================= */
+async function startExperience(ref,isBLR){
 
-async function startExperience(isBangalore, ref){
+const snap=await ref.get();
+const data=snap.data();
 
-  const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
-  const snap = await ref.get();
+const title=document.getElementById("title");
+const status=document.getElementById("status");
+const btn=document.getElementById("mainBtn");
 
-  const titleEl = document.getElementById("title");
-  const statusEl = document.getElementById("status");
-  const claimBtn = document.getElementById("claimBtn");
-  const lensBtn = document.getElementById("lensBtn");
+btn.style.display="inline-block";
 
-  if(!snap.exists){
-    titleEl.innerText="Hoodie Not Registered";
-    return;
-  }
+let device=localStorage.getItem("deviceId");
 
-  const data = snap.data();
-  let deviceId = localStorage.getItem("deviceId");
+if(!data.ownerRegistered){
 
-  if(!data.ownerRegistered){
+title.innerText="Unclaimed Hoodie";
+status.innerText="Activate ownership to personalise.";
+btn.innerText="Activate My Hoodie";
 
-    titleEl.innerText="Unclaimed Hoodie";
-    statusEl.innerText="Activate ownership to personalise.";
-    claimBtn.style.display="inline-block";
+btn.onclick=()=>{
+btn.innerText="Activating...";
+btn.disabled=true;
 
-    claimBtn.onclick = async () => {
+const id=crypto.randomUUID();
+localStorage.setItem("deviceId",id);
 
-      claimBtn.disabled = true;
-      claimBtn.innerText = "Activating...";
+ref.update({ownerRegistered:true,registeredDevice:id});
 
-      const newId = crypto.randomUUID();
-      localStorage.setItem("deviceId", newId);
+setTimeout(()=>{
+title.innerText="Welcome "+data.name;
+title.classList.add("owner");
+status.innerText="Your Dragon Hoodie recognises its owner.";
+btn.innerText="Enter Experience";
+btn.disabled=false;
+btn.onclick=()=>openLens(isBLR);
+},400);
+};
 
-      ref.update({
-        ownerRegistered:true,
-        registeredDevice:newId
-      });
+}else if(device===data.registeredDevice){
 
-      setTimeout(()=>{
-        titleEl.innerText="Welcome " + data.name;
-        titleEl.classList.add("owner");
-        statusEl.innerText="Your Dragon Hoodie recognises its owner.";
-        claimBtn.style.display="none";
-      }, 400);
-    };
+title.innerText="Welcome "+data.name;
+title.classList.add("owner");
+status.innerText="Your Dragon Hoodie recognises its owner.";
+btn.innerText="Enter Experience";
+btn.onclick=()=>openLens(isBLR);
 
-  } else if(deviceId && deviceId === data.registeredDevice){
+}else{
 
-    titleEl.innerText="Welcome " + data.name;
-    titleEl.classList.add("owner");
-    statusEl.innerText="Your Dragon Hoodie recognises its owner.";
-
-  } else {
-
-    titleEl.innerText="Hoodie Unlocked";
-    statusEl.innerText="Experience available.";
-  }
-
-  const day = isDayTime();
-  let lensURL;
-
-  if(isBangalore){
-    lensURL = day ? LENS.bangaloreDay : LENS.bangaloreNight;
-  } else {
-    lensURL = day ? LENS.globalDay : LENS.globalNight;
-  }
-
-  lensBtn.href = lensURL;
-  lensBtn.style.display="inline-block";
+title.innerText="Hoodie Unlocked";
+status.innerText="Experience available.";
+btn.innerText="Enter Experience";
+btn.onclick=()=>openLens(isBLR);
+}
 }
 
-/* ================= TIMER ================= */
+function openLens(isBLR){
+const day=isDay();
+let url;
+if(isBLR){
+url=day?LENS.bangaloreDay:LENS.bangaloreNight;
+}else{
+url=day?LENS.globalDay:LENS.globalNight;
+}
+window.location.href=url;
+}
 
 function startTimer(){
-  let t=120;
-  const timer=document.getElementById("timer");
-  const interval=setInterval(()=>{
-    timer.innerText="Session ends in " + t-- + "s";
-    if(t<0) clearInterval(interval);
-  },1000);
+let t=120;
+const timer=document.getElementById("timer");
+setInterval(()=>{
+timer.innerText="Session ends in "+t--+"s";
+},1000);
 }
 
-/* ================= AUTO RELEASE ================= */
-
-window.addEventListener("beforeunload", async ()=>{
-  const hoodieId=new URLSearchParams(window.location.search).get("hoodie");
-  if(!hoodieId) return;
-  await db.collection("hoodies").doc(hoodieId)
-    .set({ inUse:false }, { merge:true });
+window.addEventListener("beforeunload",async()=>{
+const hoodieId=new URLSearchParams(window.location.search).get("hoodie");
+if(!hoodieId)return;
+await db.collection("hoodies").doc(hoodieId).set({inUse:false},{merge:true});
 });
 
-/* ================= INIT ================= */
-
 applyTheme();
-checkAndLock();
+init();
 
 </script>
 </body>
