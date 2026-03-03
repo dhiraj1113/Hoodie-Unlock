@@ -25,6 +25,7 @@
     }
   </style>
 
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
@@ -38,6 +39,7 @@
 <a id="lensBtn" style="display:none;" href="#">Open AR Lens</a>
 
 <script>
+
 /* ================= FIREBASE SETUP ================= */
 const firebaseConfig = {
   apiKey: "AIzaSyBn-6yjJd7C4PHF43zj-BEL_bqp4s9S5Yc",
@@ -83,7 +85,7 @@ function isDayTime() {
   return h >= 6 && h < 18;
 }
 
-/* ================= EXPERIENCE ================= */
+/* ================= OWNER / EXPERIENCE ================= */
 async function startExperience(isBangalore) {
   const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
   const ref = db.collection("hoodies").doc(hoodieId);
@@ -101,20 +103,22 @@ async function startExperience(isBangalore) {
 
   let deviceId = localStorage.getItem("deviceId");
 
-  /* ===== OWNER NOT REGISTERED ===== */
+  /* ===== IF NOT CLAIMED YET ===== */
   if (!data.ownerRegistered) {
+
     statusEl.innerHTML = `
       This hoodie is unclaimed.<br><br>
-      Double tap anywhere to activate ownership.
+      Double click anywhere to activate ownership.
     `;
 
-    let tapCount = 0;
+    let lastTap = 0;
 
     document.body.addEventListener("click", async () => {
-      tapCount++;
-      setTimeout(() => tapCount = 0, 600);
+      const currentTime = new Date().getTime();
+      const tapLength = currentTime - lastTap;
 
-      if (tapCount === 2) {
+      if (tapLength < 500 && tapLength > 0) {
+
         const newId = crypto.randomUUID();
         localStorage.setItem("deviceId", newId);
 
@@ -125,6 +129,8 @@ async function startExperience(isBangalore) {
 
         location.reload();
       }
+
+      lastTap = currentTime;
     });
 
     return;
@@ -153,7 +159,7 @@ async function startExperience(isBangalore) {
   btn.style.display = "inline-block";
 }
 
-/* ================= LOCATION CHECK ================= */
+/* ================= LOCATION ================= */
 function detectLocation() {
   if (!navigator.geolocation) {
     startExperience(false);
@@ -177,7 +183,7 @@ function detectLocation() {
   );
 }
 
-/* ================= LOCK LOGIC ================= */
+/* ================= LOCK SYSTEM ================= */
 async function checkAndLock() {
   const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
 
@@ -222,6 +228,7 @@ function startTimer() {
 window.addEventListener("beforeunload", async () => {
   const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
   if (!hoodieId) return;
+
   await db.collection("hoodies").doc(hoodieId).set(
     { inUse: false },
     { merge: true }
@@ -229,6 +236,7 @@ window.addEventListener("beforeunload", async () => {
 });
 
 checkAndLock();
+
 </script>
 
 </body>
