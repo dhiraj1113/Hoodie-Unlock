@@ -1,124 +1,30 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Hoodie Unlocked</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+async function unlock(isBLR){
+  document.getElementById("loader").style.display="none";
 
-  <style>
-    body {
-      background: black;
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding-top: 25vh;
-    }
-    a {
-      display: inline-block;
-      margin-top: 20px;
-      padding: 14px 24px;
-      background: white;
-      color: black;
-      text-decoration: none;
-      font-weight: bold;
-      border-radius: 8px;
-    }
-  </style>
-
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-</head>
-
-<body>
-
-<h1 id="title">🔓 Hoodie Unlocked</h1>
-<p id="status">Authenticating hoodie…</p>
-<p id="timer"></p>
-
-<a id="lensBtn" style="display:none;" href="#">Open AR Lens</a>
-
-<script>
-
-/* ================= FIREBASE SETUP ================= */
-const firebaseConfig = {
-  apiKey: "AIzaSyBn-6yjJd7C4PHF43zj-BEL_bqp4s9S5Yc",
-  authDomain: "hoodie-lock.firebaseapp.com",
-  projectId: "hoodie-lock",
-  storageBucket: "hoodie-lock.firebasestorage.app",
-  messagingSenderId: "110562874571",
-  appId: "1:110562874571:web:87fa63e77cac10924c774e"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-/* ================= CONFIG ================= */
-const LOCK_TIMEOUT = 2 * 60 * 1000;
-
-const LENS = {
-  bangaloreDay: "https://www.snapchat.com/unlock/BANGALORE_DAY",
-  bangaloreNight: "https://www.snapchat.com/unlock/BANGALORE_NIGHT",
-  globalDay: "https://www.snapchat.com/unlock/?type=SNAPCODE&uuid=18f417f3c8354a2795e115939c19908c&metadata=01",
-  globalNight: "https://www.snapchat.com/unlock/?type=SNAPCODE&uuid=18f417f3c8354a2795e115939c19908c&metadata=01"
-};
-
-const BLR_LAT = 12.9716;
-const BLR_LON = 77.5946;
-const ALLOWED_RADIUS_KM = 50;
-
-/* ================= HELPERS ================= */
-function distanceKm(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) *
-    Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) ** 2;
-  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-}
-
-function isDayTime() {
-  const h = new Date().getHours();
-  return h >= 6 && h < 18;
-}
-
-/* ================= OWNER / EXPERIENCE ================= */
-async function startExperience(isBangalore) {
   const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
   const ref = db.collection("hoodies").doc(hoodieId);
   const snap = await ref.get();
-
-  if (!snap.exists) {
-    document.getElementById("status").innerText = "❌ Hoodie not registered in system";
-    return;
-  }
-
   const data = snap.data();
-  const statusEl = document.getElementById("status");
+
+  const status = document.getElementById("status");
   const btn = document.getElementById("lensBtn");
-  const titleEl = document.getElementById("title");
 
   let deviceId = localStorage.getItem("deviceId");
 
-  /* ===== IF NOT CLAIMED YET ===== */
+  // If hoodie not registered yet
   if (!data.ownerRegistered) {
-
-    statusEl.innerHTML = `
+    status.innerHTML = `
       This hoodie is unclaimed.<br><br>
-      Double click anywhere to activate ownership.
+      Double tap anywhere to activate ownership.
     `;
 
-    let lastTap = 0;
+    let tapCount = 0;
 
     document.body.addEventListener("click", async () => {
-      const currentTime = new Date().getTime();
-      const tapLength = currentTime - lastTap;
+      tapCount++;
+      setTimeout(() => tapCount = 0, 600);
 
-      if (tapLength < 500 && tapLength > 0) {
-
+      if (tapCount === 2) {
         const newId = crypto.randomUUID();
         localStorage.setItem("deviceId", newId);
 
@@ -129,115 +35,31 @@ async function startExperience(isBangalore) {
 
         location.reload();
       }
-
-      lastTap = currentTime;
     });
 
     return;
   }
 
-  /* ===== OWNER MATCH ===== */
+  // Owner recognized
   if (deviceId && deviceId === data.registeredDevice) {
-    titleEl.innerText = "🔓 Welcome " + data.name;
-    statusEl.innerText = "Your Dragon Hoodie has recognized you.";
+    document.getElementById("title").innerText = "WELCOME " + data.name.toUpperCase();
+
+    status.innerHTML = `
+      Your Dragon Hoodie has recognized you.<br>
+      The experience awakens.
+    `;
   } else {
-    titleEl.innerText = "🔓 Hoodie Unlocked";
-    statusEl.innerText = "Experience unlocked.";
+    document.getElementById("title").innerText = "WELCOME";
+
+    status.innerHTML = `
+      The Dragon Experience is now active.
+    `;
   }
 
-  /* ===== LENS SELECTION ===== */
-  const day = isDayTime();
-  let lensURL;
+  let lensURL = isBLR
+    ? (isDay() ? LENS.bangaloreDay : LENS.bangaloreNight)
+    : (isDay() ? LENS.globalDay : LENS.globalNight);
 
-  if (isBangalore) {
-    lensURL = day ? LENS.bangaloreDay : LENS.bangaloreNight;
-  } else {
-    lensURL = day ? LENS.globalDay : LENS.globalNight;
-  }
-
-  btn.href = lensURL;
   btn.style.display = "inline-block";
+  btn.onclick = () => window.location.href = lensURL;
 }
-
-/* ================= LOCATION ================= */
-function detectLocation() {
-  if (!navigator.geolocation) {
-    startExperience(false);
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      const dist = distanceKm(
-        pos.coords.latitude,
-        pos.coords.longitude,
-        BLR_LAT,
-        BLR_LON
-      );
-      startExperience(dist <= ALLOWED_RADIUS_KM);
-    },
-    () => {
-      startExperience(false);
-    },
-    { enableHighAccuracy: true }
-  );
-}
-
-/* ================= LOCK SYSTEM ================= */
-async function checkAndLock() {
-  const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
-
-  if (!hoodieId) {
-    document.getElementById("status").innerText = "❌ Invalid hoodie link";
-    return;
-  }
-
-  const ref = db.collection("hoodies").doc(hoodieId);
-  const snap = await ref.get();
-  const now = Date.now();
-
-  if (snap.exists) {
-    const data = snap.data();
-    if (data.inUse && now - data.usedAt < LOCK_TIMEOUT) {
-      document.body.innerHTML = `
-        <h1>🚫 Hoodie already in use</h1>
-        <p>Please try again shortly.</p>
-      `;
-      return;
-    }
-  }
-
-  await ref.set({ inUse: true, usedAt: now }, { merge: true });
-
-  startTimer();
-  detectLocation();
-}
-
-/* ================= TIMER ================= */
-function startTimer() {
-  let t = 120;
-  const timer = document.getElementById("timer");
-
-  const i = setInterval(() => {
-    timer.innerText = `⏳ Session ends in ${t--}s`;
-    if (t < 0) clearInterval(i);
-  }, 1000);
-}
-
-/* ================= AUTO RELEASE ================= */
-window.addEventListener("beforeunload", async () => {
-  const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
-  if (!hoodieId) return;
-
-  await db.collection("hoodies").doc(hoodieId).set(
-    { inUse: false },
-    { merge: true }
-  );
-});
-
-checkAndLock();
-
-</script>
-
-</body>
-</html>
