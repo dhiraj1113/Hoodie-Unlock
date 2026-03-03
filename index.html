@@ -39,21 +39,8 @@ body{
   100%{background-position:0% 50%}
 }
 
-/* Subtle watermark */
-.watermark{
-  position:absolute;
-  inset:0;
-  background:url("https://images.unsplash.com/photo-1611221786917-1d0db1f2fd56?q=80&w=1600") center/cover no-repeat;
-  opacity:0.05;
-  filter:blur(2px);
-  pointer-events:none;
-}
-
-/* Content */
 .container{
-  position:relative;
-  z-index:2;
-  padding:25vh 20px;
+  padding:30vh 20px;
 }
 
 h1{
@@ -87,17 +74,13 @@ button{
 button:active{transform:scale(.96)}
 
 #timer{opacity:.5;margin-top:8px}
-#celestial{position:absolute;top:30px;right:30px;font-size:26px}
 </style>
 </head>
 
 <body>
 
-<div class="watermark"></div>
-<div id="celestial"></div>
-
 <div class="container">
-  <h1 id="title">Authenticating...</h1>
+  <h1 id="title">Loading...</h1>
   <p id="status"></p>
   <p id="timer"></p>
   <button id="mainBtn" style="display:none;"></button>
@@ -119,9 +102,9 @@ appId:"1:110562874571:web:87fa63e77cac10924c774e"
 firebase.initializeApp(firebaseConfig);
 const db=firebase.firestore();
 
-const LOCK_TIMEOUT=120000;
+/* ================= CONFIG ================= */
 
-/* ================= LENS LINKS ================= */
+const LOCK_TIMEOUT=120000;
 
 const LENS={
 bangaloreDay:"https://www.snapchat.com/unlock/BANGALORE_DAY",
@@ -134,33 +117,28 @@ const BLR_LAT=12.9716;
 const BLR_LON=77.5946;
 const ALLOWED_RADIUS_KM=50;
 
-/* ================= THEME ================= */
+/* ================= HELPERS ================= */
 
 function isDay(){
-const h=new Date().getHours();
-return h>=6&&h<18;
+  const h=new Date().getHours();
+  return h>=6&&h<18;
 }
 
 function applyTheme(){
-const celestial=document.getElementById("celestial");
-if(isDay()){
-document.body.classList.add("day");
-celestial.innerText="☀️";
-}else{
-document.body.classList.add("night");
-celestial.innerText="🌙";
+  if(isDay()){
+    document.body.classList.add("day");
+  }else{
+    document.body.classList.add("night");
+  }
 }
-}
-
-/* ================= GEO DISTANCE ================= */
 
 function distanceKm(a,b,c,d){
-const R=6371;
-const dLat=(c-a)*Math.PI/180;
-const dLon=(d-b)*Math.PI/180;
-const x=Math.sin(dLat/2)**2+
-Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
-return R*(2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)));
+  const R=6371;
+  const dLat=(c-a)*Math.PI/180;
+  const dLon=(d-b)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+
+  Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*(2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)));
 }
 
 /* ================= MAIN ================= */
@@ -170,38 +148,15 @@ async function init(){
 applyTheme();
 
 const hoodieId=new URLSearchParams(window.location.search).get("hoodie");
+
 if(!hoodieId){
-document.getElementById("title").innerText="Invalid Hoodie";
-return;
+  document.getElementById("title").innerText="Invalid Hoodie";
+  return;
 }
 
 const ref=db.collection("hoodies").doc(hoodieId);
-let snap=await ref.get();
-let now=Date.now();
-
-/* RESET LOCK IF EXPIRED */
-if(snap.exists){
-const d=snap.data();
-if(d.inUse && d.usedAt && now-d.usedAt>LOCK_TIMEOUT){
-await ref.update({inUse:false});
-}
-}
-
-snap=await ref.get();
-const data=snap.data()||{};
-
-await ref.set({inUse:true,usedAt:now},{merge:true});
-startTimer();
-
-navigator.geolocation.getCurrentPosition(pos=>{
-const dist=distanceKm(pos.coords.latitude,pos.coords.longitude,BLR_LAT,BLR_LON);
-startUI(ref,data,dist<=ALLOWED_RADIUS_KM);
-},()=>startUI(ref,data,false),{enableHighAccuracy:true});
-}
-
-/* ================= UI STATE ================= */
-
-function startUI(ref,data,isBLR){
+const snap=await ref.get();
+const now=Date.now();
 
 const title=document.getElementById("title");
 const status=document.getElementById("status");
@@ -209,88 +164,118 @@ const btn=document.getElementById("mainBtn");
 
 btn.style.display="inline-block";
 
-let device=localStorage.getItem("deviceId");
+let data=snap.data()||{};
+
+/* RESET LOCK IF EXPIRED */
+if(data.inUse && data.usedAt && now-data.usedAt>LOCK_TIMEOUT){
+  await ref.update({inUse:false});
+  data.inUse=false;
+}
 
 /* UNCLAIMED */
 if(!data.ownerRegistered){
 
-title.innerText="Unclaimed Hoodie";
-status.innerText="Activate to personalise your Dragon.";
-btn.innerText="Activate My Hoodie";
+  title.innerText="Unclaimed Hoodie";
+  status.innerText="Activate to personalise your Dragon.";
+  btn.innerText="Activate My Hoodie";
 
-btn.onclick=async()=>{
-btn.disabled=true;
-const id=crypto.randomUUID();
-localStorage.setItem("deviceId",id);
+  btn.onclick=async()=>{
 
-await ref.update({
-ownerRegistered:true,
-registeredDevice:id,
-name:"Owner"
-});
+    btn.disabled=true;
+    btn.innerText="Activating...";
 
-title.innerText="Welcome Owner";
-title.classList.add("owner");
-status.innerText="Your hoodie recognises you.";
-btn.innerText="Enter Experience";
-btn.disabled=false;
-btn.onclick=()=>openLens(isBLR);
-};
+    const id=crypto.randomUUID();
+    localStorage.setItem("deviceId",id);
 
-return;
+    await ref.set({
+      ownerRegistered:true,
+      registeredDevice:id,
+      name:"Owner",
+      inUse:false
+    },{merge:true});
+
+    title.innerText="Welcome Owner";
+    title.classList.add("owner");
+    status.innerText="Your hoodie recognises you.";
+    btn.innerText="Enter Experience";
+    btn.disabled=false;
+    btn.onclick=()=>enterExperience(ref);
+  };
+
+  return;
 }
 
-/* OWNER */
+/* OWNER OR GUEST */
+
+let device=localStorage.getItem("deviceId");
+
 if(device===data.registeredDevice){
-
-title.innerText="Welcome "+(data.name||"Owner");
-title.classList.add("owner");
-status.innerText="Your Dragon Hoodie recognises you.";
-btn.innerText="Enter Experience";
-btn.onclick=()=>openLens(isBLR);
-return;
+  title.innerText="Welcome "+(data.name||"Owner");
+  title.classList.add("owner");
+}else{
+  title.innerText="Hoodie Unlocked";
 }
 
-/* GUEST */
-
-title.innerText="Hoodie Unlocked";
 status.innerText="Experience available.";
 btn.innerText="Enter Experience";
-btn.onclick=()=>openLens(isBLR);
+btn.onclick=()=>enterExperience(ref);
 }
 
-/* ================= LENS ================= */
+/* ================= ENTER EXPERIENCE ================= */
 
-function openLens(isBLR){
-const day=isDay();
-let url;
-if(isBLR){
-url=day?LENS.bangaloreDay:LENS.bangaloreNight;
-}else{
-url=day?LENS.globalDay:LENS.globalNight;
-}
-window.location.href=url;
-}
+async function enterExperience(ref){
 
-/* ================= TIMER ================= */
+const snap=await ref.get();
+const data=snap.data();
+const now=Date.now();
 
-function startTimer(){
-let t=120;
-const timer=document.getElementById("timer");
-setInterval(()=>{
-if(t>=0){
-timer.innerText="Session ends in "+t--+"s";
-}
-},1000);
+/* CHECK LOCK */
+if(data.inUse && now-data.usedAt<LOCK_TIMEOUT){
+  alert("Hoodie currently in use. Try again shortly.");
+  return;
 }
 
-/* ================= RELEASE LOCK ================= */
-
-window.addEventListener("beforeunload",async()=>{
-const hoodieId=new URLSearchParams(window.location.search).get("hoodie");
-if(!hoodieId)return;
-await db.collection("hoodies").doc(hoodieId).set({inUse:false},{merge:true});
+/* LOCK NOW */
+await ref.update({
+  inUse:true,
+  usedAt:now
 });
+
+/* REQUEST LOCATION (Safari-safe) */
+navigator.geolocation.getCurrentPosition(
+
+(pos)=>{
+  const dist=distanceKm(
+    pos.coords.latitude,
+    pos.coords.longitude,
+    BLR_LAT,
+    BLR_LON
+  );
+
+  const isBLR=dist<=ALLOWED_RADIUS_KM;
+  const day=isDay();
+
+  let url;
+
+  if(isBLR){
+    url=day?LENS.bangaloreDay:LENS.bangaloreNight;
+  }else{
+    url=day?LENS.globalDay:LENS.globalNight;
+  }
+
+  window.location.href=url;
+},
+
+()=>{
+  const day=isDay();
+  const url=day?LENS.globalDay:LENS.globalNight;
+  window.location.href=url;
+},
+
+{enableHighAccuracy:true}
+
+);
+}
 
 init();
 
