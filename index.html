@@ -2,81 +2,60 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Dragon Hoodie Experience</title>
+<title>Dragon Hoodie</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
+*{margin:0;padding:0;box-sizing:border-box}
 
 body{
   font-family:-apple-system,BlinkMacSystemFont,sans-serif;
   text-align:center;
-  overflow:hidden;
-  transition:background 1s ease,color 1s ease;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:background .6s,color .6s;
 }
 
-/* DAY / NIGHT */
 .day{
-  background:linear-gradient(120deg,#f4f6fb,#e8edf7,#f4f6fb);
-  background-size:200% 200%;
-  animation:move 8s ease infinite;
+  background:linear-gradient(120deg,#f4f6fb,#e8edf7);
   color:#111;
 }
 
 .night{
-  background:linear-gradient(120deg,#0f1118,#1b1f2c,#0f1118);
-  background-size:200% 200%;
-  animation:move 10s ease infinite;
+  background:linear-gradient(120deg,#0f1118,#1b1f2c);
   color:#fff;
 }
 
-@keyframes move{
-  0%{background-position:0% 50%}
-  50%{background-position:100% 50%}
-  100%{background-position:0% 50%}
-}
+.container{padding:20px;width:100%;max-width:400px}
 
-.container{
-  padding:30vh 20px;
-}
-
-h1{
-  font-size:28px;
-  margin-bottom:10px;
-}
-
-p{
-  opacity:.7;
-  margin-bottom:6px;
-}
+h1{margin-bottom:10px;font-size:26px}
+p{opacity:.7;margin-bottom:10px}
 
 .owner{
-  text-shadow:0 0 25px rgba(255,215,0,0.9);
+  text-shadow:0 0 25px rgba(255,215,0,.9);
 }
 
 button{
-  margin-top:25px;
-  padding:15px 40px;
+  margin-top:20px;
+  padding:16px 30px;
   border:none;
   border-radius:14px;
   font-size:16px;
   font-weight:600;
   cursor:pointer;
-  transition:.3s;
 }
 
 .day button{background:#111;color:#fff;}
 .night button{background:#fff;color:#000;}
 
-button:active{transform:scale(.96)}
-
-#timer{opacity:.5;margin-top:8px}
+#timer{opacity:.5;margin-top:10px}
 </style>
 </head>
-
 <body>
 
 <div class="container">
@@ -104,7 +83,7 @@ const db=firebase.firestore();
 
 /* ================= CONFIG ================= */
 
-const LOCK_TIMEOUT=120000;
+const LOCK_TIMEOUT = 120000;
 
 const LENS={
 bangaloreDay:"https://www.snapchat.com/unlock/BANGALORE_DAY",
@@ -121,15 +100,11 @@ const ALLOWED_RADIUS_KM=50;
 
 function isDay(){
   const h=new Date().getHours();
-  return h>=6&&h<18;
+  return h>=6 && h<18;
 }
 
 function applyTheme(){
-  if(isDay()){
-    document.body.classList.add("day");
-  }else{
-    document.body.classList.add("night");
-  }
+  document.body.classList.add(isDay() ? "day" : "night");
 }
 
 function distanceKm(a,b,c,d){
@@ -148,39 +123,35 @@ async function init(){
 applyTheme();
 
 const hoodieId=new URLSearchParams(window.location.search).get("hoodie");
-
 if(!hoodieId){
   document.getElementById("title").innerText="Invalid Hoodie";
   return;
 }
 
 const ref=db.collection("hoodies").doc(hoodieId);
-const snap=await ref.get();
+let snap=await ref.get();
+let data=snap.data()||{};
 const now=Date.now();
 
-const title=document.getElementById("title");
-const status=document.getElementById("status");
-const btn=document.getElementById("mainBtn");
-
-btn.style.display="inline-block";
-
-let data=snap.data()||{};
-
-/* RESET LOCK IF EXPIRED */
+/* Reset expired lock */
 if(data.inUse && data.usedAt && now-data.usedAt>LOCK_TIMEOUT){
   await ref.update({inUse:false});
   data.inUse=false;
 }
 
+const title=document.getElementById("title");
+const status=document.getElementById("status");
+const btn=document.getElementById("mainBtn");
+btn.style.display="inline-block";
+
 /* UNCLAIMED */
 if(!data.ownerRegistered){
 
   title.innerText="Unclaimed Hoodie";
-  status.innerText="Activate to personalise your Dragon.";
+  status.innerText="Activate to personalise.";
   btn.innerText="Activate My Hoodie";
 
   btn.onclick=async()=>{
-
     btn.disabled=true;
     btn.innerText="Activating...";
 
@@ -196,7 +167,7 @@ if(!data.ownerRegistered){
 
     title.innerText="Welcome Owner";
     title.classList.add("owner");
-    status.innerText="Your hoodie recognises you.";
+    status.innerText="Ready.";
     btn.innerText="Enter Experience";
     btn.disabled=false;
     btn.onclick=()=>enterExperience(ref);
@@ -205,7 +176,7 @@ if(!data.ownerRegistered){
   return;
 }
 
-/* OWNER OR GUEST */
+/* OWNER / GUEST */
 
 let device=localStorage.getItem("deviceId");
 
@@ -221,33 +192,35 @@ btn.innerText="Enter Experience";
 btn.onclick=()=>enterExperience(ref);
 }
 
-/* ================= ENTER EXPERIENCE ================= */
+/* ================= ENTER ================= */
 
 async function enterExperience(ref){
 
-const snap=await ref.get();
-const data=snap.data();
-const now=Date.now();
+console.log("Enter clicked");
 
-/* CHECK LOCK */
-if(data.inUse && now-data.usedAt<LOCK_TIMEOUT){
-  alert("Hoodie currently in use. Try again shortly.");
-  return;
-}
-
-/* LOCK NOW */
-await ref.update({
-  inUse:true,
-  usedAt:now
-});
-
-/* REQUEST LOCATION (Safari-safe) */
 navigator.geolocation.getCurrentPosition(
 
-(pos)=>{
+async function(position){
+
+  console.log("Location granted");
+
+  const snap=await ref.get();
+  const data=snap.data();
+  const now=Date.now();
+
+  if(data.inUse && now-data.usedAt<LOCK_TIMEOUT){
+    alert("Hoodie in use. Try again shortly.");
+    return;
+  }
+
+  await ref.update({
+    inUse:true,
+    usedAt:now
+  });
+
   const dist=distanceKm(
-    pos.coords.latitude,
-    pos.coords.longitude,
+    position.coords.latitude,
+    position.coords.longitude,
     BLR_LAT,
     BLR_LON
   );
@@ -264,12 +237,12 @@ navigator.geolocation.getCurrentPosition(
   }
 
   window.location.href=url;
+
 },
 
-()=>{
-  const day=isDay();
-  const url=day?LENS.globalDay:LENS.globalNight;
-  window.location.href=url;
+function(error){
+  console.log("Location error:",error);
+  alert("Location blocked or unavailable.");
 },
 
 {enableHighAccuracy:true}
