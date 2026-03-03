@@ -7,19 +7,17 @@
 
 <style>
 body {
-  background: black;
-  color: white;
+  margin: 0;
   font-family: Arial, sans-serif;
   text-align: center;
   padding-top: 25vh;
   transition: background 0.5s ease, color 0.5s ease;
 }
+
 a {
   display: inline-block;
   margin-top: 20px;
   padding: 14px 24px;
-  background: white;
-  color: black;
   text-decoration: none;
   font-weight: bold;
   border-radius: 8px;
@@ -44,7 +42,7 @@ a {
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "hoodie-lock.firebaseapp.com",
-  projectId: "hoodie-lock",
+  projectId: "hoodie-lock"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -65,7 +63,36 @@ const BLR_LAT = 12.9716;
 const BLR_LON = 77.5946;
 const ALLOWED_RADIUS_KM = 50;
 
-/* ================= HELPERS ================= */
+/* ================= GLOBAL DAY/NIGHT ================= */
+
+function isDayTime() {
+  const now = new Date();
+  const hours = now.getHours(); // Local user time (global safe)
+  return hours >= 6 && hours < 18;
+}
+
+function applyDayNightTheme() {
+  const day = isDayTime();
+  const btn = document.getElementById("lensBtn");
+
+  if (day) {
+    document.body.style.background = "white";
+    document.body.style.color = "black";
+    if (btn) {
+      btn.style.background = "black";
+      btn.style.color = "white";
+    }
+  } else {
+    document.body.style.background = "black";
+    document.body.style.color = "white";
+    if (btn) {
+      btn.style.background = "white";
+      btn.style.color = "black";
+    }
+  }
+}
+
+/* ================= DISTANCE CALC ================= */
 
 function distanceKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -79,24 +106,10 @@ function distanceKm(lat1, lon1, lat2, lon2) {
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
-function isDayTime() {
-  const h = new Date().getHours();
-  return h >= 6 && h < 18;
-}
-
-function applyDayNightTheme() {
-  if (isDayTime()) {
-    document.body.style.background = "white";
-    document.body.style.color = "black";
-  } else {
-    document.body.style.background = "black";
-    document.body.style.color = "white";
-  }
-}
-
 /* ================= LOCK SYSTEM ================= */
 
 async function checkAndLock() {
+
   const statusEl = document.getElementById("status");
   const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
 
@@ -109,6 +122,7 @@ async function checkAndLock() {
 
   try {
     await db.runTransaction(async (transaction) => {
+
       const doc = await transaction.get(ref);
       const now = Date.now();
 
@@ -130,6 +144,7 @@ async function checkAndLock() {
     startExperience();
 
   } catch (e) {
+
     document.body.innerHTML = `
       <h1>🚫 Hoodie already in use</h1>
       <p>Please try again in 2 minutes.</p>
@@ -142,6 +157,7 @@ async function checkAndLock() {
 function startExperience() {
 
   applyDayNightTheme();
+  setInterval(applyDayNightTheme, 10000); // update every 10 sec
 
   if (!navigator.geolocation) {
     unlock(false);
@@ -164,6 +180,7 @@ function startExperience() {
 }
 
 function unlock(isBangalore) {
+
   const statusEl = document.getElementById("status");
   const btn = document.getElementById("lensBtn");
   const day = isDayTime();
@@ -197,21 +214,26 @@ function unlock(isBangalore) {
 /* ================= TIMER ================= */
 
 function startTimer() {
+
   let t = 120;
   const timer = document.getElementById("timer");
 
   const interval = setInterval(() => {
+
     timer.innerText = `⏳ Session ends in ${t--}s`;
+
     if (t < 0) {
       clearInterval(interval);
       releaseLock();
     }
+
   }, 1000);
 }
 
 /* ================= AUTO RELEASE ================= */
 
 async function releaseLock() {
+
   const hoodieId = new URLSearchParams(window.location.search).get("hoodie");
   if (!hoodieId) return;
 
@@ -220,6 +242,8 @@ async function releaseLock() {
     { merge: true }
   );
 }
+
+/* ================= START ================= */
 
 checkAndLock();
 
