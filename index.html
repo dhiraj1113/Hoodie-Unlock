@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Dragon Hoodie</title>
+<title>Dragon Hoodie Experience</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -13,12 +13,12 @@
 
 body{
   font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-  text-align:center;
-  min-height:100vh;
   display:flex;
   align-items:center;
   justify-content:center;
-  transition:background .6s,color .6s;
+  min-height:100vh;
+  text-align:center;
+  transition:.5s;
 }
 
 .day{
@@ -31,10 +31,10 @@ body{
   color:#fff;
 }
 
-.container{padding:20px;width:100%;max-width:400px}
+.container{max-width:400px;padding:20px}
 
-h1{margin-bottom:10px;font-size:26px}
-p{opacity:.7;margin-bottom:10px}
+h1{font-size:26px;margin-bottom:10px}
+p{opacity:.7;margin-bottom:8px}
 
 .owner{
   text-shadow:0 0 25px rgba(255,215,0,.9);
@@ -42,7 +42,7 @@ p{opacity:.7;margin-bottom:10px}
 
 button{
   margin-top:20px;
-  padding:16px 30px;
+  padding:16px 32px;
   border:none;
   border-radius:14px;
   font-size:16px;
@@ -104,7 +104,7 @@ function isDay(){
 }
 
 function applyTheme(){
-  document.body.classList.add(isDay() ? "day" : "night");
+  document.body.classList.add(isDay()?"day":"night");
 }
 
 function distanceKm(a,b,c,d){
@@ -116,7 +116,7 @@ function distanceKm(a,b,c,d){
   return R*(2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)));
 }
 
-/* ================= MAIN ================= */
+/* ================= INIT ================= */
 
 async function init(){
 
@@ -145,6 +145,7 @@ const btn=document.getElementById("mainBtn");
 btn.style.display="inline-block";
 
 /* UNCLAIMED */
+
 if(!data.ownerRegistered){
 
   title.innerText="Unclaimed Hoodie";
@@ -152,9 +153,6 @@ if(!data.ownerRegistered){
   btn.innerText="Activate My Hoodie";
 
   btn.onclick=async()=>{
-    btn.disabled=true;
-    btn.innerText="Activating...";
-
     const id=crypto.randomUUID();
     localStorage.setItem("deviceId",id);
 
@@ -169,7 +167,6 @@ if(!data.ownerRegistered){
     title.classList.add("owner");
     status.innerText="Ready.";
     btn.innerText="Enter Experience";
-    btn.disabled=false;
     btn.onclick=()=>enterExperience(ref);
   };
 
@@ -190,19 +187,17 @@ if(device===data.registeredDevice){
 status.innerText="Experience available.";
 btn.innerText="Enter Experience";
 btn.onclick=()=>enterExperience(ref);
+
 }
 
-/* ================= ENTER ================= */
+/* ================= ENTER EXPERIENCE ================= */
 
-async function enterExperience(ref){
+function enterExperience(ref){
 
-console.log("Enter clicked");
-
+/* SAFARI: Request location FIRST */
 navigator.geolocation.getCurrentPosition(
 
 async function(position){
-
-  console.log("Location granted");
 
   const snap=await ref.get();
   const data=snap.data();
@@ -240,14 +235,14 @@ async function(position){
 
 },
 
-function(error){
-  console.log("Location error:",error);
-  alert("Location blocked or unavailable.");
+function(){
+  alert("Location required for this experience.");
 },
 
 {enableHighAccuracy:true}
 
 );
+
 }
 
 init();
