@@ -169,15 +169,27 @@ function unlock(isBangalore) {
   const day = isDayTime();
 
   let lensURL;
+  let message;
 
   if (isBangalore) {
-    lensURL = day ? LENS.bangaloreDay : LENS.bangaloreNight;
-    statusEl.innerText = "📍 Bangalore Exclusive Experience";
+    if (day) {
+      lensURL = LENS.bangaloreDay;
+      message = "🌞 Bangalore Day Experience Unlocked";
+    } else {
+      lensURL = LENS.bangaloreNight;
+      message = "🌙 Bangalore Night Experience Unlocked";
+    }
   } else {
-    lensURL = day ? LENS.globalDay : LENS.globalNight;
-    statusEl.innerText = "🌍 Global Experience";
+    if (day) {
+      lensURL = LENS.globalDay;
+      message = "🌞 Global Day Experience Unlocked";
+    } else {
+      lensURL = LENS.globalNight;
+      message = "🌙 Global Night Experience Unlocked";
+    }
   }
 
+  statusEl.innerText = message;
   btn.href = lensURL;
   btn.style.display = "inline-block";
 }
