@@ -66,13 +66,47 @@ body {
     linear-gradient(180deg, #050d1f 0%, #0d1b3e 50%, #050810 100%);
 }
 
-/* ── DRAGON CANVAS LAYER ── */
+/* ── DRAGON SVG LAYER ── */
 #dragon-layer {
   position: fixed; inset: 0; z-index: 1;
   pointer-events: none;
   opacity: 0; transition: opacity 2s ease;
 }
 #dragon-layer.visible { opacity: 1; }
+#dragon-svg { width: 100%; height: 100%; overflow: visible; }
+
+.dragon-body {
+  fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
+  filter: url(#dragonGlow);
+  stroke-dasharray: 2200; stroke-dashoffset: 2200;
+  animation: drawPath 3.5s ease forwards;
+}
+.dragon-wing {
+  fill: none; stroke-width: 1; stroke-linecap: round;
+  filter: url(#dragonGlow);
+  stroke-dasharray: 1400; stroke-dashoffset: 1400;
+  animation: drawPath 3s 0.6s ease forwards;
+}
+.dragon-detail {
+  fill: none; stroke-width: 0.8; stroke-linecap: round;
+  filter: url(#dragonGlow);
+  stroke-dasharray: 700; stroke-dashoffset: 700;
+  opacity: 0.65;
+  animation: drawPath 2.2s 1.2s ease forwards;
+}
+.dragon-breath {
+  fill: none; stroke-width: 1.4; stroke-linecap: round;
+  filter: url(#breathGlow);
+  stroke-dasharray: 500; stroke-dashoffset: 500;
+  animation: drawPath 1.8s 3s ease forwards, breathePulse 2.2s 5s ease-in-out infinite;
+}
+.dragon-group {
+  animation: dragonFloat 7s 4s ease-in-out infinite;
+  transform-origin: 500px 350px;
+}
+@keyframes drawPath    { to { stroke-dashoffset: 0; } }
+@keyframes dragonFloat { 0%,100%{transform:translateY(0) rotate(0deg)} 35%{transform:translateY(-10px) rotate(0.5deg)} 70%{transform:translateY(-5px) rotate(-0.4deg)} }
+@keyframes breathePulse{ 0%,100%{opacity:0.65;stroke-width:1.4} 50%{opacity:1;stroke-width:2.2} }
 
 /* ── PARTICLES ── */
 #particles { position: fixed; inset: 0; z-index: 2; pointer-events: none; }
@@ -208,16 +242,187 @@ body {
 <!-- =============================================
   !! ONLY CHANGE THIS LINE BEFORE EACH HOODIE !!
 ============================================== -->
-<script>window.OWNER_NAME = "Dhiraj";</script>
+<script>window.OWNER_NAME = "Arjun";</script>
 
 <!-- Backgrounds -->
 <div class="bg-layer active" id="bg-loading"></div>
 <div class="bg-layer" id="bg-day"></div>
 <div class="bg-layer" id="bg-night"></div>
 
-<!-- Dragon Canvas Layer -->
+<!-- Dragon SVG — sits behind all screens -->
 <div id="dragon-layer">
-  <canvas id="dragon-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+  <svg id="dragon-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="dragonGlow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="3.5" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="breathGlow" x="-60%" y="-60%" width="220%" height="220%">
+        <feGaussianBlur stdDeviation="8" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <g class="dragon-group">
+
+      <!-- ═══ TAIL ═══ long whipping tail from lower left -->
+      <path class="dragon-body" d="
+        M 40 860
+        C 70 830, 110 800, 155 770
+        C 200 740, 250 718, 305 700
+        C 360 682, 415 672, 470 660
+        C 530 647, 585 638, 638 622
+        C 692 605, 740 585, 785 562
+        C 830 538, 868 512, 902 484
+        C 936 456, 964 426, 990 396
+        C 1016 366, 1038 336, 1058 308"/>
+
+      <!-- tail tip curl -->
+      <path class="dragon-body" d="
+        M 40 860
+        C 24 870, 12 872, 8 862
+        C 4 852, 14 840, 28 840
+        C 40 840, 46 852, 38 858"/>
+
+      <!-- ═══ MAIN BODY ═══ -->
+      <path class="dragon-body" d="
+        M 1058 308
+        C 1074 284, 1090 260, 1104 236
+        C 1118 212, 1130 190, 1140 168
+        C 1150 148, 1158 128, 1162 110
+        C 1166 92, 1164 76, 1158 62
+        C 1152 50, 1142 40, 1128 36"/>
+
+      <!-- ═══ NECK ═══ -->
+      <path class="dragon-body" d="
+        M 1128 36
+        C 1112 28, 1094 24, 1078 28
+        C 1062 32, 1048 44, 1044 58
+        C 1040 72, 1048 88, 1060 96
+        C 1072 104, 1086 104, 1098 98"/>
+
+      <!-- ═══ HEAD ═══ -->
+      <path class="dragon-body" d="
+        M 1098 98
+        C 1110 92, 1124 88, 1136 90
+        C 1150 92, 1162 102, 1166 116
+        C 1170 130, 1164 146, 1154 154
+        C 1144 162, 1130 164, 1118 160
+        C 1106 156, 1096 146, 1094 134
+        C 1092 122, 1098 110, 1108 104"/>
+
+      <!-- snout extension -->
+      <path class="dragon-body" d="
+        M 1166 116
+        C 1180 112, 1196 114, 1206 122
+        C 1216 130, 1218 144, 1210 152
+        C 1202 160, 1188 162, 1178 156
+        C 1166 150, 1162 136, 1166 124"/>
+
+      <!-- lower jaw -->
+      <path class="dragon-detail" d="
+        M 1154 154
+        C 1166 162, 1184 162, 1196 156
+        C 1206 150, 1212 140, 1208 128"/>
+
+      <!-- ═══ HORNS ═══ -->
+      <path class="dragon-detail" d="M 1110 88  C 1106 72, 1112 56, 1122 46 C 1130 38, 1142 36, 1148 44 C 1154 52, 1150 64, 1140 70"/>
+      <path class="dragon-detail" d="M 1096 94  C 1088 76, 1090 58, 1100 46 C 1108 36, 1122 32, 1130 40"/>
+      <!-- small third horn -->
+      <path class="dragon-detail" d="M 1124 90  C 1124 78, 1130 66, 1138 60 C 1144 54, 1152 52, 1154 60"/>
+
+      <!-- ═══ EYE ═══ -->
+      <circle cx="1122" cy="108" r="5" class="dragon-detail" style="stroke-dasharray:40;stroke-dashoffset:40;fill:none;stroke-width:1.5"/>
+      <!-- pupil slit -->
+      <line x1="1122" y1="104" x2="1122" y2="112" class="dragon-detail" style="stroke-dasharray:20;stroke-dashoffset:20;stroke-width:2"/>
+
+      <!-- ═══ EAR FRILL ═══ -->
+      <path class="dragon-detail" d="M 1098 100 C 1086 88, 1082 72, 1088 60 C 1092 52, 1102 48, 1108 54"/>
+
+      <!-- ═══ SPINE SPIKES ═══ -->
+      <path class="dragon-detail" d="
+        M 1148 66  L 1156 48 L 1162 66
+        M 1108 130 L 1102 112 L 1114 128
+        M 1070 180 L 1062 160 L 1076 178
+        M 1038 228 L 1030 208 L 1044 226
+        M 1010 278 L 1002 256 L 1016 276
+        M 984  330 L 976  308 L 990  328
+        M 958  384 L 950  360 L 964  382"/>
+
+      <!-- ═══ BELLY UNDULATION ═══ -->
+      <path class="dragon-detail" d="
+        M 920 460 C 940 470, 960 476, 975 468
+        M 870 500 C 892 510, 912 516, 928 506
+        M 818 538 C 840 548, 862 552, 878 542
+        M 762 572 C 784 582, 806 584, 820 572"/>
+
+      <!-- ═══ LEFT WING — main frame ═══ -->
+      <path class="dragon-wing" d="
+        M 1010 360
+        C 976 316, 928 272, 870 238
+        C 820 208, 762 190, 700 182
+        C 642 174, 582 178, 530 192
+        C 478 206, 436 228, 414 256
+        C 392 284, 392 316, 410 340
+        C 428 364, 460 378, 498 382"/>
+
+      <!-- wing membrane fingers -->
+      <path class="dragon-wing" d="
+        M 1010 360
+        C 984 332, 948 306, 900 286
+        C 858 268, 808 258, 756 256
+        C 704 254, 654 262, 614 278
+        C 578 292, 550 312, 538 334"/>
+
+      <path class="dragon-wing" d="
+        M 1010 360
+        C 990 342, 962 324, 920 310
+        C 880 296, 832 290, 782 290
+        C 732 290, 682 300, 648 320
+        C 622 336, 608 358, 610 380"/>
+
+      <path class="dragon-wing" d="
+        M 1010 360
+        C 998 350, 980 338, 952 328
+        C 920 316, 880 310, 838 312
+        C 796 314, 754 324, 724 342
+        C 700 356, 688 374, 692 394"/>
+
+      <!-- ═══ RIGHT WING — partially behind body ═══ -->
+      <path class="dragon-wing" d="
+        M 1060 300
+        C 1076 268, 1088 232, 1092 196
+        C 1096 164, 1090 134, 1076 112
+        C 1064 94, 1046 84, 1026 86
+        C 1006 88, 988 102, 984 120"/>
+
+      <path class="dragon-wing" d="
+        M 1060 300
+        C 1082 272, 1098 238, 1104 200
+        C 1110 168, 1104 134, 1088 108"/>
+
+      <path class="dragon-wing" d="
+        M 1060 300
+        C 1088 272, 1106 236, 1112 196
+        C 1118 160, 1110 120, 1094 94"/>
+
+      <!-- ═══ FRONT CLAW ═══ -->
+      <path class="dragon-detail" d="
+        M 860 522
+        C 852 540, 848 558, 850 576
+        C 852 590, 860 600, 872 604
+        M 850 576 C 840 582, 828 584, 820 594
+        M 850 576 C 848 586, 852 598, 862 604
+        M 850 576 C 858 590, 866 600, 876 598"/>
+
+      <!-- ═══ FIRE BREATH ═══ -->
+      <path class="dragon-breath" d="M 1210 136 C 1240 126, 1280 112, 1320 94  C 1354 78, 1382 60, 1400 40  C 1414 22, 1412 4, 1396 -4"/>
+      <path class="dragon-breath" d="M 1210 142 C 1238 140, 1278 136, 1316 122 C 1348 110, 1376 90, 1394 68  C 1410 48, 1410 28, 1396 18"/>
+      <path class="dragon-breath" d="M 1212 134 C 1244 128, 1286 114, 1324 96  C 1358 80, 1388 58, 1406 34  C 1420 12, 1416 -8, 1398 -16"/>
+      <path class="dragon-breath" d="M 1208 148 C 1234 152, 1272 152, 1306 142 C 1336 132, 1360 112, 1372 88  C 1382 68, 1376 46, 1360 36"/>
+
+    </g>
+  </svg>
 </div>
 
 <!-- Particles -->
@@ -242,11 +447,13 @@ body {
 
 <!-- ═══════ OWNER SCREEN ═══════ -->
 <div class="screen" id="screen-owner">
+  <!-- Greeting -->
   <div class="greeting-block">
     <div class="greeting-hello">Hello,</div>
     <div class="greeting-name" id="owner-name-el">Arjun</div>
   </div>
 
+  <!-- Auth badge -->
   <div class="auth-badge">
     <div class="auth-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="var(--t-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -330,8 +537,6 @@ const THEMES = {
     time:      'Day Manifestation',
     bgId:      'bg-day',
     particles: ['#c9a84c','#f0d080','#e85d04','#ff8c42','#ffd060'],
-    dragonCol: '#c9a84c',
-    dragonFire:['#fff7a0','#ffcc00','#ff6600','#ff2200'],
   },
   night: {
     primary:   '#4fc3f7',
@@ -346,8 +551,6 @@ const THEMES = {
     time:      'Night Manifestation',
     bgId:      'bg-night',
     particles: ['#4fc3f7','#82cfff','#1565c0','#b3e5fc','#7ec8e3'],
-    dragonCol: '#4fc3f7',
-    dragonFire:['#aaeeff','#00cfff','#0066ff','#0033aa'],
   }
 };
 
@@ -361,434 +564,73 @@ function applyTheme(t) {
   s.setProperty('--t-gradient-a', t.gradA);
   s.setProperty('--t-gradient-b', t.gradB);
   s.setProperty('--t-gradient-c', t.gradC);
+  // recolour SVG paths
+  document.querySelectorAll('.dragon-body,.dragon-wing,.dragon-detail,.dragon-breath').forEach(el => {
+    el.style.stroke = t.primary;
+  });
+  // recolour corner frames
+  const borderVal = `1px solid ${t.primary}`;
   document.querySelectorAll('.frame-corner').forEach(el => {
+    ['borderTop','borderBottom','borderLeft','borderRight'].forEach(prop => {
+      if (el.style[prop]) el.style[prop] = borderVal;
+    });
+    el.style.cssText = el.style.cssText.replace(/border-(top|bottom|left|right):[^;]+;/g, (m) => {
+      return m; // keep direction, only update color
+    });
+    // simpler: just force all four, CSS will only render borders that were set
     el.style.borderColor = t.primary;
   });
-  // Update dragon colour
-  dragonTheme.col  = t.dragonCol;
-  dragonTheme.fire = t.dragonFire;
 }
 
 /* ════════════════════════════════════════
-   PARTICLES (UI layer)
+   PARTICLES
 ════════════════════════════════════════ */
-const pCanvas = document.getElementById('particles');
-const pCtx    = pCanvas.getContext('2d');
-let pColors   = ['#c9a84c','#f0d080','#e85d04'];
-let uiParticles = [];
+const canvas = document.getElementById('particles');
+const ctx    = canvas.getContext('2d');
+let pColors  = ['#c9a84c','#f0d080','#e85d04'];
+let particles = [];
 
-function resizeP() { pCanvas.width = window.innerWidth; pCanvas.height = window.innerHeight; }
-window.addEventListener('resize', resizeP); resizeP();
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize); resize();
 
-class UIParticle {
+class Particle {
   constructor() { this.reset(true); }
   reset(scatter) {
-    this.x = Math.random() * pCanvas.width;
-    this.y = scatter ? Math.random() * pCanvas.height : pCanvas.height + 10;
+    this.x = Math.random() * canvas.width;
+    this.y = scatter ? Math.random() * canvas.height : canvas.height + 10;
     this.size   = Math.random() * 2.2 + 0.4;
     this.speedY = -(Math.random() * 0.75 + 0.25);
     this.speedX = (Math.random() - 0.5) * 0.45;
     this.maxLife = Math.random() * 240 + 80;
     this.life   = scatter ? Math.random() * this.maxLife : 0;
-    this.color  = pColors[Math.floor(Math.random() * pColors.length)];
+    this.pickColor();
   }
+  pickColor() { this.color = pColors[Math.floor(Math.random() * pColors.length)]; }
   update() {
     this.x += this.speedX; this.y += this.speedY; this.life++;
-    if (this.life > this.maxLife || this.y < -10) this.reset(false);
+    if (this.life > this.maxLife || this.y < -10) { this.reset(false); }
   }
   draw() {
-    pCtx.save();
-    pCtx.globalAlpha = 0.75 * (1 - this.life / this.maxLife);
-    pCtx.fillStyle = pCtx.shadowColor = this.color;
-    pCtx.shadowBlur = 6;
-    pCtx.beginPath(); pCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2); pCtx.fill();
-    pCtx.restore();
+    ctx.save();
+    ctx.globalAlpha = 0.75 * (1 - this.life / this.maxLife);
+    ctx.fillStyle = ctx.shadowColor = this.color;
+    ctx.shadowBlur = 6;
+    ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
   }
 }
 
 function initParticles(colors) {
   pColors = colors;
-  uiParticles = Array.from({ length: 60 }, () => new UIParticle());
+  particles = Array.from({ length: 60 }, () => new Particle());
 }
-function pLoop() {
-  pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
-  uiParticles.forEach(p => { p.color = pColors[Math.floor(Math.random() * pColors.length)]; p.update(); p.draw(); });
-  requestAnimationFrame(pLoop);
+function animLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(p => { p.pickColor(); p.update(); p.draw(); });
+  requestAnimationFrame(animLoop);
 }
 initParticles(['#c9a84c','#f0d080','#e85d04']);
-pLoop();
-
-/* ════════════════════════════════════════
-   EASTERN DRAGON CANVAS ANIMATION
-════════════════════════════════════════ */
-const dc  = document.getElementById('dragon-canvas');
-const dctx = dc.getContext('2d');
-let DW, DH, dragonT = 0;
-let dragonRunning = false;
-
-const dragonTheme = { col: '#c9a84c', fire: ['#fff7a0','#ffcc00','#ff6600','#ff2200'] };
-
-function resizeDragon() {
-  DW = dc.width  = window.innerWidth;
-  DH = dc.height = window.innerHeight;
-}
-window.addEventListener('resize', resizeDragon);
-resizeDragon();
-
-/* Spine path — S-curve that undulates */
-function getSpine(time) {
-  const pts = [], N = 80;
-  for (let i = 0; i < N; i++) {
-    const f = i / (N - 1);
-    const w1 = Math.sin(f * Math.PI * 2.2 - time * 0.018) * 0.17;
-    const w2 = Math.sin(f * Math.PI * 1.1 - time * 0.012 + 1.2) * 0.09;
-    pts.push({
-      x: DW * (0.22 + w1 + w2 + f * 0.56),
-      y: DH * (0.06 + f * 0.9)
-    });
-  }
-  return pts;
-}
-
-function getNormals(spine) {
-  return spine.map((p, i) => {
-    const dx = i < spine.length-1 ? spine[i+1].x - p.x : p.x - spine[i-1].x;
-    const dy = i < spine.length-1 ? spine[i+1].y - p.y : p.y - spine[i-1].y;
-    const len = Math.hypot(dx, dy) || 1;
-    return { x: -dy/len, y: dx/len };
-  });
-}
-
-function bodyThick(f) {
-  const base = Math.min(DW, DH) * 0.044;
-  if (f < 0.05) return lerp(4, base, f / 0.05);
-  if (f > 0.88) return lerp(base * 0.4, 2, (f - 0.88) / 0.12);
-  return base * (0.68 + 0.32 * Math.sin(f * Math.PI));
-}
-
-function lerp(a, b, t) { return a + (b - a) * t; }
-function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-
-/* Fire particles */
-const dFire = [];
-class DFireParticle {
-  constructor(x, y, ang) {
-    const sp = (Math.random() - 0.5) * 0.9;
-    const v  = DH * (0.004 + Math.random() * 0.007);
-    this.x = x; this.y = y;
-    this.vx = Math.cos(ang + sp) * v;
-    this.vy = Math.sin(ang + sp) * v - DH * 0.002;
-    this.life = 1;
-    this.decay = 0.018 + Math.random() * 0.022;
-    this.r = DH * (0.007 + Math.random() * 0.014);
-    this.ember = Math.random() < 0.4;
-  }
-  step() { this.x += this.vx; this.y += this.vy; this.vy -= DH * 0.00008; this.life -= this.decay; }
-  draw() {
-    const cols = dragonTheme.fire;
-    const ci = Math.floor((1 - this.life) * cols.length);
-    const c  = cols[Math.min(ci, cols.length - 1)];
-    dctx.save();
-    dctx.globalAlpha = this.life * (this.ember ? 0.9 : 0.75);
-    dctx.fillStyle = c; dctx.shadowColor = c; dctx.shadowBlur = this.ember ? 8 : 20;
-    dctx.beginPath();
-    dctx.arc(this.x, this.y, this.r * (this.ember ? 0.35 : 1) * this.life, 0, Math.PI * 2);
-    dctx.fill();
-    dctx.restore();
-  }
-}
-
-function spawnBodyFlames(spine, normals, thick) {
-  const N = spine.length;
-  for (let i = 0; i < 3; i++) {
-    const idx = Math.floor(Math.random() * N);
-    const p = spine[idx], nm = normals[idx];
-    const side = Math.random() < 0.5 ? 1 : -1;
-    const ox = p.x + nm.x * thick[idx] * side * (0.9 + Math.random() * 0.5);
-    const oy = p.y + nm.y * thick[idx] * side * (0.9 + Math.random() * 0.5);
-    const baseAng = Math.atan2(-nm.y * side, -nm.x * side) - Math.PI * 0.5;
-    dFire.push(new DFireParticle(ox, oy, baseAng));
-  }
-}
-
-function drawBody(spine, normals, thick) {
-  const N = spine.length;
-  const top = [], bot = [];
-  for (let i = 0; i < N; i++) {
-    const nm = normals[i], p = spine[i], r = thick[i];
-    top.push({ x: p.x + nm.x * r, y: p.y + nm.y * r });
-    bot.push({ x: p.x - nm.x * r, y: p.y - nm.y * r });
-  }
-  dctx.beginPath();
-  dctx.moveTo(top[0].x, top[0].y);
-  for (let i = 1; i < N; i++) dctx.lineTo(top[i].x, top[i].y);
-  for (let i = N-1; i >= 0; i--) dctx.lineTo(bot[i].x, bot[i].y);
-  dctx.closePath();
-  const col = dragonTheme.col;
-  const bg = dctx.createLinearGradient(DW*0.2, DH*0.1, DW*0.8, DH*0.9);
-  bg.addColorStop(0,   '#ffe880');
-  bg.addColorStop(0.3, '#c87818');
-  bg.addColorStop(0.6, '#8a4a00');
-  bg.addColorStop(1,   '#3a1800');
-  dctx.fillStyle = bg;
-  dctx.fill();
-  dctx.strokeStyle = col;
-  dctx.lineWidth = 2;
-  dctx.shadowColor = col;
-  dctx.shadowBlur = 14;
-  dctx.stroke();
-  dctx.shadowBlur = 0;
-}
-
-function drawScales(spine, normals, thick) {
-  const N = spine.length;
-  dctx.save();
-  for (let i = 4; i < N - 4; i += 2) {
-    const f   = i / (N - 1);
-    const r   = thick[i] * 0.6;
-    const p   = spine[i], nm = normals[i];
-    const off = (Math.floor(i / 2) % 2 === 0) ? 0 : r * 0.9;
-    const ang = Math.atan2(nm.y, nm.x);
-    for (let s = -2; s <= 2; s++) {
-      const sx = p.x + nm.x * (s * r * 1.1 + off);
-      const sy = p.y + nm.y * (s * r * 1.1 + off);
-      dctx.beginPath();
-      dctx.ellipse(sx, sy, r * 0.7, r * 0.5, ang, 0, Math.PI * 2);
-      const grd = dctx.createRadialGradient(sx - r*0.15, sy - r*0.15, r*0.05, sx, sy, r*0.7);
-      grd.addColorStop(0,   '#ffe87a');
-      grd.addColorStop(0.4, '#c9881c');
-      grd.addColorStop(1,   '#5a3200');
-      dctx.fillStyle = grd;
-      dctx.globalAlpha = clamp(0.82 - Math.abs(s) * 0.06, 0, 1);
-      dctx.fill();
-      dctx.strokeStyle = '#3a1a00';
-      dctx.lineWidth = 0.5;
-      dctx.globalAlpha = 0.45;
-      dctx.stroke();
-    }
-  }
-  dctx.globalAlpha = 1;
-  dctx.restore();
-}
-
-function drawDorsal(spine, normals, thick) {
-  const N = spine.length;
-  dctx.strokeStyle = dragonTheme.col;
-  dctx.globalAlpha = 0.7;
-  for (let i = 3; i < 22; i += 2) {
-    const p = spine[i], nm = normals[i];
-    const h = lerp(DH*0.028, DH*0.008, (i - 3) / 19);
-    dctx.beginPath();
-    dctx.moveTo(p.x + nm.x * thick[i], p.y + nm.y * thick[i]);
-    dctx.lineTo(p.x + nm.x * (thick[i] + h * 1.2), p.y + nm.y * (thick[i] + h * 1.2) - h * 0.8);
-    dctx.lineWidth = 1;
-    dctx.stroke();
-  }
-  dctx.globalAlpha = 1;
-}
-
-function drawClaws(spine, normals, thick, time) {
-  const N = spine.length;
-  [0.18, 0.35, 0.58, 0.75].forEach((f, li) => {
-    const idx = Math.floor(f * N);
-    const p   = spine[idx], nm = normals[idx];
-    const bodyAng = Math.atan2(
-      spine[Math.min(idx+2,N-1)].y - spine[Math.max(idx-2,0)].y,
-      spine[Math.min(idx+2,N-1)].x - spine[Math.max(idx-2,0)].x
-    );
-    [-1, 1].forEach(side => {
-      dctx.save();
-      dctx.translate(p.x + nm.x * thick[idx] * side, p.y + nm.y * thick[idx] * side);
-      dctx.rotate(bodyAng + side * Math.PI * 0.5 + Math.sin(time * 0.025 + li) * 0.2);
-      const ll = thick[idx] * 2.2;
-      dctx.beginPath(); dctx.moveTo(0,0); dctx.lineTo(0, ll); dctx.lineTo(ll*0.4, ll*1.8);
-      dctx.strokeStyle = '#c87010'; dctx.lineWidth = thick[idx]*0.5; dctx.lineCap = 'round'; dctx.stroke();
-      [-0.4, 0, 0.4].forEach(ca => {
-        dctx.beginPath();
-        dctx.moveTo(ll*0.4, ll*1.8);
-        dctx.lineTo(ll*0.4 + Math.cos(ca)*ll*0.7, ll*1.8 + Math.sin(ca+Math.PI*0.2)*ll*0.7);
-        dctx.strokeStyle = '#e8c060'; dctx.lineWidth = 2; dctx.stroke();
-      });
-      dctx.restore();
-    });
-  });
-}
-
-function drawTail(spine, normals, thick) {
-  const N = spine.length;
-  const p = spine[N-1];
-  const ang = Math.atan2(spine[N-1].y - spine[N-5].y, spine[N-1].x - spine[N-5].x);
-  dctx.save();
-  dctx.translate(p.x, p.y);
-  dctx.rotate(ang);
-  const r = thick[N-1] * 3;
-  dctx.beginPath();
-  dctx.moveTo(0, 0);
-  for (let a = 0; a < Math.PI * 1.8; a += 0.1) {
-    const sp2 = r * (1 - a / (Math.PI * 2));
-    dctx.lineTo(Math.cos(a + Math.PI) * sp2, Math.sin(a + Math.PI) * sp2);
-  }
-  dctx.strokeStyle = '#c87818';
-  dctx.lineWidth = thick[N-1] * 1.5;
-  dctx.globalAlpha = 0.9;
-  dctx.lineCap = 'round';
-  dctx.stroke();
-  dctx.globalAlpha = 1;
-  dctx.restore();
-}
-
-function drawHead(spine, normals, thick, time) {
-  const h0  = spine[0], h3 = spine[3];
-  const ang = Math.atan2(h0.y - h3.y, h0.x - h3.x);
-  const sc  = Math.min(DW, DH) * 0.072;
-  const col = dragonTheme.col;
-
-  dctx.save();
-  dctx.translate(h0.x, h0.y);
-  dctx.rotate(ang);
-  dctx.shadowColor = col;
-  dctx.shadowBlur = 18;
-
-  /* Mane flames */
-  for (let i = 0; i < 12; i++) {
-    const fa = (-0.6 + i * 0.12) * Math.PI + Math.sin(time * 0.04 + i) * 0.18;
-    const fl = sc * (0.7 + 0.5 * Math.random());
-    const fx = Math.cos(fa) * fl * 0.5, fy = Math.sin(fa) * fl;
-    dctx.beginPath();
-    dctx.moveTo(-sc*0.3, 0);
-    dctx.bezierCurveTo(-sc*0.1+fx*0.3, fy*0.3, fx*0.7, fy*0.7, fx, fy);
-    const grd = dctx.createLinearGradient(-sc*0.3, 0, fx, fy);
-    grd.addColorStop(0,   'rgba(220,100,0,0.9)');
-    grd.addColorStop(0.5, 'rgba(255,180,0,0.7)');
-    grd.addColorStop(1,   'rgba(255,220,80,0)');
-    dctx.strokeStyle = grd;
-    dctx.lineWidth = sc * 0.065 * (1 - i * 0.05);
-    dctx.globalAlpha = 0.7;
-    dctx.stroke();
-  }
-  dctx.globalAlpha = 1;
-
-  /* Skull */
-  dctx.beginPath();
-  dctx.moveTo(-sc*0.35, -sc*0.28);
-  dctx.bezierCurveTo(-sc*0.1, -sc*0.42, sc*0.2, -sc*0.35, sc*0.35, -sc*0.15);
-  dctx.bezierCurveTo(sc*0.48, 0, sc*0.42, sc*0.22, sc*0.25, sc*0.28);
-  dctx.bezierCurveTo(sc*0.05, sc*0.32, -sc*0.2, sc*0.25, -sc*0.35, sc*0.1);
-  dctx.bezierCurveTo(-sc*0.5, -sc*0.05, -sc*0.5, -sc*0.18, -sc*0.35, -sc*0.28);
-  dctx.closePath();
-  const hg = dctx.createRadialGradient(-sc*0.1, -sc*0.1, sc*0.05, 0, 0, sc*0.5);
-  hg.addColorStop(0, '#ffe07a'); hg.addColorStop(0.5, '#b86a10'); hg.addColorStop(1, '#3a1500');
-  dctx.fillStyle = hg; dctx.fill();
-  dctx.strokeStyle = '#5a2800'; dctx.lineWidth = 1.5; dctx.stroke();
-
-  /* Snout */
-  dctx.beginPath();
-  dctx.moveTo(sc*0.25, -sc*0.12);
-  dctx.bezierCurveTo(sc*0.55, -sc*0.14, sc*0.82, -sc*0.06, sc*0.88, 0);
-  dctx.bezierCurveTo(sc*0.82, sc*0.08, sc*0.55, sc*0.12, sc*0.25, sc*0.1);
-  dctx.closePath();
-  const sg = dctx.createLinearGradient(sc*0.25, 0, sc*0.88, 0);
-  sg.addColorStop(0, '#d4890e'); sg.addColorStop(1, '#7a3a00');
-  dctx.fillStyle = sg; dctx.fill();
-  dctx.strokeStyle = '#3a1a00'; dctx.lineWidth = 1; dctx.stroke();
-
-  /* Lower jaw */
-  dctx.beginPath();
-  dctx.moveTo(sc*0.25, sc*0.1);
-  dctx.bezierCurveTo(sc*0.5, sc*0.14, sc*0.78, sc*0.22, sc*0.84, sc*0.25);
-  dctx.bezierCurveTo(sc*0.7, sc*0.35, sc*0.4, sc*0.3, sc*0.22, sc*0.22);
-  dctx.closePath();
-  dctx.fillStyle = '#7a3500'; dctx.fill();
-  dctx.strokeStyle = '#2a1000'; dctx.lineWidth = 1; dctx.stroke();
-
-  /* Mouth glow */
-  dctx.beginPath();
-  dctx.moveTo(sc*0.28, sc*0.08);
-  dctx.bezierCurveTo(sc*0.55, sc*0.1, sc*0.8, sc*0.2, sc*0.83, sc*0.24);
-  dctx.bezierCurveTo(sc*0.7, sc*0.1, sc*0.45, sc*0.04, sc*0.28, sc*0.08);
-  dctx.fillStyle = 'rgba(255,80,0,0.7)'; dctx.fill();
-
-  /* Teeth */
-  dctx.fillStyle = '#f5e8c0';
-  for (let i = 0; i < 5; i++) {
-    const tx = sc*(0.32+i*0.11), h2 = sc*(0.07-i*0.006);
-    dctx.beginPath(); dctx.moveTo(tx, sc*0.09); dctx.lineTo(tx+sc*0.025, sc*0.09+h2); dctx.lineTo(tx+sc*0.05, sc*0.09); dctx.fill();
-  }
-
-  /* Whiskers */
-  dctx.strokeStyle = '#ffe090'; dctx.lineWidth = 1.2; dctx.globalAlpha = 0.8;
-  [[sc*0.65,-sc*0.02, sc*0.9,-sc*0.18, sc*1.2,-sc*0.12],
-   [sc*0.65, sc*0.06, sc*0.9, sc*0.22, sc*1.1, sc*0.32]].forEach(([x1,y1,cx1,cy1,x2,y2]) => {
-    dctx.beginPath(); dctx.moveTo(x1,y1); dctx.quadraticCurveTo(cx1,cy1,x2,y2); dctx.stroke();
-  });
-  dctx.globalAlpha = 1;
-
-  /* Nostril */
-  dctx.beginPath(); dctx.ellipse(sc*0.74, -sc*0.04, sc*0.045, sc*0.028, -0.4, 0, Math.PI*2);
-  dctx.fillStyle = '#3a1000'; dctx.fill();
-
-  /* Eye */
-  dctx.beginPath(); dctx.arc(sc*0.05, -sc*0.14, sc*0.11, 0, Math.PI*2);
-  dctx.fillStyle = '#1a0a00'; dctx.fill();
-  dctx.strokeStyle = '#c9600a'; dctx.lineWidth = 1.5; dctx.stroke();
-  const eyeP = 0.7 + 0.3 * Math.sin(time * 0.08);
-  dctx.beginPath(); dctx.arc(sc*0.05, -sc*0.14, sc*0.065, 0, Math.PI*2);
-  dctx.fillStyle = `rgba(255,140,0,${eyeP})`; dctx.shadowColor = '#ff6600'; dctx.shadowBlur = 14; dctx.fill(); dctx.shadowBlur = 0;
-  dctx.beginPath(); dctx.ellipse(sc*0.05, -sc*0.14, sc*0.022, sc*0.042, 0, 0, Math.PI*2);
-  dctx.fillStyle = '#000'; dctx.fill();
-
-  /* Antler horns */
-  dctx.strokeStyle = '#c8a040'; dctx.lineWidth = sc*0.045; dctx.globalAlpha = 0.9; dctx.lineCap = 'round';
-  dctx.beginPath(); dctx.moveTo(-sc*0.1,-sc*0.28); dctx.bezierCurveTo(-sc*0.15,-sc*0.55,-sc*0.05,-sc*0.72,-sc*0.08,-sc*0.85); dctx.stroke();
-  dctx.lineWidth = sc*0.025;
-  dctx.beginPath(); dctx.moveTo(-sc*0.12,-sc*0.55); dctx.lineTo(-sc*0.28,-sc*0.68); dctx.stroke();
-  dctx.beginPath(); dctx.moveTo(-sc*0.1,-sc*0.68); dctx.lineTo(sc*0.02,-sc*0.8); dctx.stroke();
-  dctx.lineWidth = sc*0.04;
-  dctx.beginPath(); dctx.moveTo(sc*0.12,-sc*0.26); dctx.bezierCurveTo(sc*0.2,-sc*0.5,sc*0.15,-sc*0.66,sc*0.18,-sc*0.78); dctx.stroke();
-  dctx.lineWidth = sc*0.022;
-  dctx.beginPath(); dctx.moveTo(sc*0.17,-sc*0.52); dctx.lineTo(sc*0.32,-sc*0.62); dctx.stroke();
-
-  dctx.globalAlpha = 1; dctx.lineCap = 'butt';
-  dctx.shadowBlur = 0;
-  dctx.restore();
-}
-
-function dragonFrame() {
-  if (!dragonRunning) return;
-  dragonT++;
-
-  dctx.clearRect(0, 0, DW, DH);
-
-  const spine   = getSpine(dragonT);
-  const normals = getNormals(spine);
-  const thick   = spine.map((_, i) => bodyThick(i / (spine.length - 1)));
-
-  /* Spawn ambient body flames */
-  spawnBodyFlames(spine, normals, thick);
-
-  /* Draw flames behind body */
-  dFire.forEach(f => f.draw());
-  dFire.forEach(f => f.step());
-  for (let i = dFire.length - 1; i >= 0; i--) if (dFire[i].life <= 0) dFire.splice(i, 1);
-
-  drawBody(spine, normals, thick);
-  drawScales(spine, normals, thick);
-  drawDorsal(spine, normals, thick);
-  drawClaws(spine, normals, thick, dragonT);
-  drawTail(spine, normals, thick);
-  drawHead(spine, normals, thick, dragonT);
-
-  /* Continuous mouth fire */
-  if (dragonT % 3 === 0) {
-    const h0 = spine[0], h3 = spine[3];
-    const ang = Math.atan2(h0.y - h3.y, h0.x - h3.x);
-    const mx = h0.x + Math.cos(ang) * DH * 0.12;
-    const my = h0.y + Math.sin(ang) * DH * 0.12;
-    dFire.push(new DFireParticle(mx, my, ang));
-  }
-
-  requestAnimationFrame(dragonFrame);
-}
+animLoop();
 
 /* ════════════════════════════════════════
    SCREEN SWITCHER
@@ -799,13 +641,8 @@ function showScreen(screenId, bgId) {
   document.getElementById(screenId).classList.add('active');
   document.getElementById(bgId).classList.add('active');
 }
-
 function revealDragon() {
   document.getElementById('dragon-layer').classList.add('visible');
-  if (!dragonRunning) {
-    dragonRunning = true;
-    dragonFrame();
-  }
 }
 
 /* ════════════════════════════════════════
@@ -879,9 +716,9 @@ async function checkAndLock() {
       }
       tx.set(ref, { inUse: true, usedAt: now, owner: ownerName }, { merge: true });
     });
-    startExperience();
+    startExperience(); // ← first scanner = owner
   } catch (e) {
-    showStalker();
+    showStalker();     // ← subsequent scanners
   }
 }
 
@@ -927,7 +764,7 @@ function showStalker() {
     `This hoodie belongs to ${ownerName}`;
 
   showScreen('screen-stalker', theme.bgId);
-  revealDragon();
+  revealDragon();   // dragon is present on stalker screen too
 }
 
 async function releaseLock() {
